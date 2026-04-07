@@ -70,8 +70,8 @@ test("new issue page state", () => {
   expect(state.page).toBe("issue-new");
   expect(state.forms).toHaveLength(1);
   expect(state.forms[0]!.name).toBe("create-issue");
-  expect(state.forms[0]!.fields).toContain("title");
-  expect(state.forms[0]!.fields).toContain("body");
+  expect(state.forms[0]!.fields.map((f) => f.name)).toContain("title");
+  expect(state.forms[0]!.fields.map((f) => f.name)).toContain("body");
   expect(state.actions.map((a) => a.action)).toContain("create");
 });
 

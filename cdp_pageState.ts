@@ -25,7 +25,16 @@ const PAGE_STATE_JS = `({
     return {
       name: f.dataset.form,
       action: form.action ? new URL(form.action).pathname : null,
-      fields: [...form.querySelectorAll("input,textarea,select")].map(i => i.name).filter(Boolean)
+      fields: [...form.querySelectorAll("input,textarea,select")].map(i => {
+        if (!i.name) return null;
+        if (i.tagName === "SELECT") return {
+          name: i.name,
+          type: "select",
+          value: i.value,
+          options: [...i.options].map(o => ({ value: o.value, label: o.text, selected: o.selected }))
+        };
+        return { name: i.name, type: i.type || i.tagName.toLowerCase() };
+      }).filter(Boolean)
     };
   }),
   nav: [...new Set([...document.querySelectorAll("a[href^='/']")].map(a => a.getAttribute("href")))]
@@ -40,13 +49,17 @@ if (typeof Bun !== "undefined" && process.argv[1]?.endsWith("cdp_pageState.ts"))
 }
 
 // For bun test usage — parse HTML string into page state
-export function pageState(html: string): {
+
+type FormField = { name: string; type: string; options?: { value: string; label: string; selected: boolean }[] };
+type PageState = {
   page: string | null;
   entities: { type: string; id: string | null; status: string | null; fields: Record<string, string>; href: string | null }[];
   actions: { action: string; text: string; selector: string }[];
-  forms: { name: string; fields: string[] }[];
+  forms: { name: string; fields: FormField[] }[];
   nav: string[];
-} {
+};
+
+export function pageState(html: string): PageState {
   const result: any = { page: null, entities: [], actions: [], forms: [], nav: [] };
 
   const rewriter = new HTMLRewriter();
@@ -83,18 +96,42 @@ export function pageState(html: string): {
     text(t) { if (result._currentAction !== undefined) result.actions[result._currentAction].text += t.text; },
   });
 
-  // forms
+  // forms — with select options
+  let currentSelect: any = null;
   rewriter.on("[data-form]", {
     element(el) {
       result.forms.push({ name: el.getAttribute("data-form"), fields: [] });
       result._currentForm = result.forms.length - 1;
     }
   });
-  rewriter.on("[data-form] input[name], [data-form] textarea[name], [data-form] select[name]", {
+  rewriter.on("[data-form] input[name], [data-form] textarea[name]", {
     element(el) {
       const name = el.getAttribute("name");
-      if (name && result._currentForm !== undefined) result.forms[result._currentForm].fields.push(name);
+      const type = el.getAttribute("type") || el.tagName === "textarea" ? "textarea" : "text";
+      if (name && result._currentForm !== undefined) result.forms[result._currentForm].fields.push({ name, type });
     }
+  });
+  rewriter.on("[data-form] select[name]", {
+    element(el) {
+      const name = el.getAttribute("name");
+      if (name && result._currentForm !== undefined) {
+        currentSelect = { name, type: "select", options: [] };
+        result.forms[result._currentForm].fields.push(currentSelect);
+      }
+    }
+  });
+  rewriter.on("[data-form] select option", {
+    element(el) {
+      if (currentSelect) {
+        currentSelect._currentOption = {
+          value: el.getAttribute("value") || "",
+          label: "",
+          selected: el.hasAttribute("selected"),
+        };
+        currentSelect.options.push(currentSelect._currentOption);
+      }
+    },
+    text(t) { if (currentSelect?._currentOption) currentSelect._currentOption.label += t.text; },
   });
 
   // nav links
@@ -109,6 +146,7 @@ export function pageState(html: string): {
 
   // cleanup
   for (const e of result.entities) delete e._currentRole;
+  for (const f of result.forms) for (const field of f.fields) if (field.options) for (const o of field.options) delete o._currentOption;
   delete result._currentAction;
   delete result._currentForm;
 
