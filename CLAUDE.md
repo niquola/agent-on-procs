@@ -14,7 +14,8 @@ Procedural web framework designed for AI agents. The key building blocks are **f
   - Views: `<module>_view_<name>.tsx`
   - Types: `<module>_type_<typeName>.ts`
   - Generated (DB): `<module>_db_<function>.ts` — auto-generated from schema. Never edit.
-  - Routes: `HTTP_<METHOD>_<path>.tsx`
+  - UI pages: `http_<path>.tsx` — always GET, returns layout + HTML
+  - API endpoints: `api_<path>_<METHOD>.tsx` — method at the end (POST, PUT, DELETE)
   - Barrel: `<module>.ts` — re-exports all module functions
   - Names should be self-descriptive so you can understand what it does without opening the file.
 
@@ -28,9 +29,10 @@ ls issues_*.ts                 # all issue functions and types
 ls *_view_*.tsx                # all views
 ls *_type_*.ts                 # all types
 ls *_db_*.ts                   # all generated DB functions
-ls HTTP_*.tsx                  # all HTTP endpoints (= REST API)
-ls HTTP_GET_*.tsx              # all GET endpoints
-ls HTTP_*issues*.tsx           # all issue routes
+ls http_*.tsx                  # all UI pages
+ls api_*.tsx                   # all API endpoints
+ls api_*_POST.tsx              # all POST endpoints
+ls http_issues*.tsx api_issues*.tsx  # all issue routes
 ls *.test.ts *.test.tsx        # all tests
 ls auth_*.ts                   # all auth functions
 ls session_*.ts                # all session functions
@@ -38,7 +40,7 @@ ls comments_*.ts               # all comment functions
 ```
 
 **Reading the web app from filenames:**
-- `ls HTTP_*.tsx` = full REST API surface
+- `ls http_*.tsx api_*.tsx` = full web surface (UI + API)
 - `ls *_view_*.tsx` = all UI pages/components
 - `ls *_type_*.ts` = domain model
 - `ls <module>.ts` = module boundaries (barrels)
@@ -94,8 +96,8 @@ migrations/<timestamp>-create-<table>.down.sql  — DROP TABLE
 <module>_type_<TypeName>.ts                      — custom types (beyond _db_)
 <module>_view_list.tsx                           — HTML views
 <module>_view_detail.tsx
-HTTP_GET_<module>.tsx                            — routes
-HTTP_POST_<module>.tsx
+http_<module>.tsx                                — UI page (GET)
+api_<module>_POST.tsx                            — API endpoint
 <module>.test.ts                                 — logic tests
 <module>_view.test.tsx                           — view tests
 ```
@@ -255,14 +257,14 @@ Logic tests go in `<module>.test.ts`, view tests in `<module>_view.test.tsx`.
 
 **Testing HTTP handlers** — handlers are just functions `(ctx, session, req, params) → string | Response | null`. Call them directly in tests without a running server:
 ```ts
-import HTTP_POST_login from "./HTTP_POST_login.tsx";
+import api_login_POST from "./api_login_POST.tsx";
 
 test("POST /login redirects on success", async () => {
   const form = new FormData();
   form.set("email", "alice@test.com");
   form.set("password", "pass");
   const req = new Request("http://localhost/login", { method: "POST", body: form });
-  const res = await HTTP_POST_login(ctx, null, req);
+  const res = await api_login_POST(ctx, null, req);
   expect((res as Response).status).toBe(302);
 });
 ```
@@ -378,37 +380,32 @@ bun -e "import { ctx } from './ctx_start.ts'; import { issues_listAll } from './
 
 ## Routes
 
-Each HTTP endpoint is a file: `HTTP_<METHOD>_<path>.tsx`. `$param` in filename becomes `:param` in route.
+Two kinds of route files. `$param` in filename becomes `:param` in route.
 
+**UI pages** (`http_*.tsx`) — always GET, return full HTML with layout:
 ```
-HTTP_GET_issues.tsx              → GET /issues
-HTTP_POST_issues.tsx             → POST /issues
-HTTP_GET_issues_$id.tsx          → GET /issues/:id
-HTTP_POST_issues_$id_close.tsx   → POST /issues/:id/close
-HTTP_POST_issues_$id_assign.tsx  → POST /issues/:id/assign
-HTTP_POST_issues_$id_comments.tsx → POST /issues/:id/comments
-```
-
-Each file exports a default function `(ctx, session, req, params) → string | Response | null`. Returns HTML string, `Response` for redirects/cookies, `null` for 404.
-
-```tsx
-// HTTP_GET_issues.tsx
-export default async function(ctx: Context, session: Session, req: Request) {
-  const issues = await issues_listAll(ctx);
-  return layout_view_page(ctx, session, "Issues", issues_view_page(ctx, issues));
-}
+http_index.tsx                    → GET /
+http_issues.tsx                   → GET /issues
+http_issues_new.tsx               → GET /issues/new
+http_issues_$id.tsx               → GET /issues/:id
+http_login.tsx                    → GET /login
 ```
 
-`router_buildRoutes.ts` auto-discovers all `HTTP_*.tsx` files and builds the route map. `server.ts` is just:
-
-```ts
-const routes = await router_buildRoutes(".", ctx);
-Bun.serve({ port: 3000, routes });
+**API endpoints** (`api_*.tsx`) — method at the end, return Response (redirect, fragment, JSON):
+```
+api_issues_POST.tsx               → POST /issues
+api_issues_$id_close_POST.tsx     → POST /issues/:id/close
+api_issues_$id_assign_POST.tsx    → POST /issues/:id/assign
+api_login_POST.tsx                → POST /login
+api_logout_POST.tsx               → POST /logout
 ```
 
-- `ls HTTP_*.tsx` — see all endpoints
-- `ls HTTP_*issues*` — see all issue routes
-- Route handlers reuse module functions directly, no extra wrappers
+Each file exports `(ctx, session, req, params) → string | Response | null`.
+
+`router_buildRoutes.ts` auto-discovers `http_*.tsx` and `api_*.tsx` files.
+
+- `ls http_*.tsx` — all UI pages
+- `ls api_*.tsx` — all API endpoints
 
 ## Auth
 

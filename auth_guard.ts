@@ -3,7 +3,7 @@ import type { Session } from "./session_type_Session.ts";
 import { session_getIdFromRequest } from "./session_getIdFromRequest.ts";
 import { session_resolve } from "./session_resolve.ts";
 
-const PUBLIC_PATHS = new Set(["/login", "/register"]);
+const PUBLIC_PATHS = new Set(["/", "/login", "/register"]);
 
 export function auth_isPublic(path: string): boolean {
   return PUBLIC_PATHS.has(path);
