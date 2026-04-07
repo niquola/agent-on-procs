@@ -262,7 +262,7 @@ test("issues list page", () => {
 
 **Via CDP** — extract live page state from browser:
 ```sh
-curl -s localhost:2230/s/app -d "$(bun cdp_pageState.ts)" | jq -r '.result.value' | jq .
+curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"JSON.stringify(__pageState(),null,2)"}}' | jq -r '.result.value' | jq .
 ```
 
 Returns:
@@ -564,7 +564,7 @@ Use `data-*` attributes to read page state as structured JSON — no screenshot 
 
 ```sh
 # full page state (views, actions, roles, forms, links)
-curl -s localhost:2230/s/app -d "$(bun cdp_pageState.ts)" | jq -r '.result.value' | jq .
+curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"JSON.stringify(__pageState(),null,2)"}}' | jq -r '.result.value' | jq .
 ```
 
 Returns: `{ url, title, views[], actions[], roles[], forms[], links[] }` — everything you need to assert page state.
@@ -592,7 +592,7 @@ curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"express
 
 | Need | Use |
 |------|-----|
-| Assert page content/state | `bun cdp_pageState.ts` → JSON |
+| Assert page content/state | `__pageState()` → JSON |
 | Click/fill/submit | `Runtime.evaluate` + `data-action`/`name` selectors |
 | Verify visual layout/styling | Screenshot (`Page.captureScreenshot`) |
 | Debug rendering bugs | Screenshot |

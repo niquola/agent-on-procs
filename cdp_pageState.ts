@@ -1,57 +1,21 @@
-// Extract page state via data-* attributes — for CDP UI testing and bun test HTML assertions.
-// CDP: curl -s localhost:2230/s/app -d "$(bun cdp_pageState.ts)" | jq -r '.result.value' | jq .
-// Tests: import { pageState } from "./cdp_pageState.ts"; const state = pageState(html);
+// Page state helper — works in CDP and in bun tests.
+//
+// CDP (injected via layout <script>):
+//   curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"JSON.stringify(__pageState(),null,2)"}}'
+//
+// Tests (HTMLRewriter-based parser):
+//   import { pageState } from "./cdp_pageState.ts";
+//   const state = pageState(html);
 
-const PAGE_STATE_JS = `({
-  page: document.querySelector("[data-page]")?.dataset.page || null,
-  url: location.pathname,
-  title: document.title,
-  entities: [...document.querySelectorAll("[data-entity]")].map(el => ({
-    type: el.dataset.entity,
-    id: el.dataset.id || null,
-    status: el.dataset.status || null,
-    fields: Object.fromEntries(
-      [...el.querySelectorAll("[data-role]")].map(r => [r.dataset.role, r.innerText.trim()])
-    ),
-    href: el.tagName === "A" ? el.getAttribute("href") : null
-  })),
-  actions: [...document.querySelectorAll("[data-action]")].map(el => ({
-    action: el.dataset.action,
-    text: el.innerText.trim().slice(0, 50),
-    selector: '[data-action="' + el.dataset.action + '"]'
-  })),
-  forms: [...document.querySelectorAll("[data-form]")].map(f => {
-    const form = f.closest("form") || f;
-    return {
-      name: f.dataset.form,
-      action: form.action ? new URL(form.action).pathname : null,
-      fields: [...form.querySelectorAll("input,textarea,select")].map(i => {
-        if (!i.name) return null;
-        if (i.tagName === "SELECT") return {
-          name: i.name,
-          type: "select",
-          value: i.value,
-          options: [...i.options].map(o => ({ value: o.value, label: o.text, selected: o.selected }))
-        };
-        return { name: i.name, type: i.type || i.tagName.toLowerCase() };
-      }).filter(Boolean)
-    };
-  }),
-  nav: [...new Set([...document.querySelectorAll("a[href^='/']")].map(a => a.getAttribute("href")))]
-})`;
+// --- types ---
 
-// For CDP usage
-if (typeof Bun !== "undefined" && process.argv[1]?.endsWith("cdp_pageState.ts")) {
-  console.log(JSON.stringify({
-    method: "Runtime.evaluate",
-    params: { expression: `JSON.stringify(${PAGE_STATE_JS}, null, 2)` }
-  }));
-}
+export type FormField = {
+  name: string;
+  type: string;
+  options?: { value: string; label: string; selected: boolean }[];
+};
 
-// For bun test usage — parse HTML string into page state
-
-type FormField = { name: string; type: string; options?: { value: string; label: string; selected: boolean }[] };
-type PageState = {
+export type PageState = {
   page: string | null;
   entities: { type: string; id: string | null; status: string | null; fields: Record<string, string>; href: string | null }[];
   actions: { action: string; text: string; selector: string }[];
@@ -59,15 +23,14 @@ type PageState = {
   nav: string[];
 };
 
+// --- HTMLRewriter parser for bun tests ---
+
 export function pageState(html: string): PageState {
   const result: any = { page: null, entities: [], actions: [], forms: [], nav: [] };
-
   const rewriter = new HTMLRewriter();
 
-  // page
   rewriter.on("[data-page]", { element(el) { result.page = el.getAttribute("data-page"); } });
 
-  // entities — collect with nested roles
   let currentEntity: any = null;
   rewriter.on("[data-entity]", {
     element(el) {
@@ -86,7 +49,6 @@ export function pageState(html: string): PageState {
     text(t) { if (currentEntity?._currentRole) { currentEntity.fields[currentEntity._currentRole] = (currentEntity.fields[currentEntity._currentRole] || "") + t.text; } },
   });
 
-  // actions
   rewriter.on("[data-action]", {
     element(el) {
       const action = el.getAttribute("data-action")!;
@@ -96,7 +58,6 @@ export function pageState(html: string): PageState {
     text(t) { if (result._currentAction !== undefined) result.actions[result._currentAction].text += t.text; },
   });
 
-  // forms — with select options
   let currentSelect: any = null;
   rewriter.on("[data-form]", {
     element(el) {
@@ -123,18 +84,13 @@ export function pageState(html: string): PageState {
   rewriter.on("[data-form] select option", {
     element(el) {
       if (currentSelect) {
-        currentSelect._currentOption = {
-          value: el.getAttribute("value") || "",
-          label: "",
-          selected: el.hasAttribute("selected"),
-        };
+        currentSelect._currentOption = { value: el.getAttribute("value") || "", label: "", selected: el.hasAttribute("selected") };
         currentSelect.options.push(currentSelect._currentOption);
       }
     },
     text(t) { if (currentSelect?._currentOption) currentSelect._currentOption.label += t.text; },
   });
 
-  // nav links
   rewriter.on("a[href^='/']", {
     element(el) {
       const href = el.getAttribute("href");
@@ -144,7 +100,6 @@ export function pageState(html: string): PageState {
 
   rewriter.transform(new Response(html));
 
-  // cleanup
   for (const e of result.entities) delete e._currentRole;
   for (const f of result.forms) for (const field of f.fields) if (field.options) for (const o of field.options) delete o._currentOption;
   delete result._currentAction;

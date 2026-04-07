@@ -1,5 +1,6 @@
 import type { Context } from "./ctx.ts";
 import type { Session } from "./session_type_Session.ts";
+import { PAGE_STATE_SCRIPT } from "./pageState_script.ts";
 
 export function layout_view_page(ctx: Context, session: Session | null, title: string, body: string): string {
   return (
@@ -10,6 +11,7 @@ export function layout_view_page(ctx: Context, session: Session | null, title: s
         <title>{title}</title>
         <script src="https://unpkg.com/htmx.org@2.0.4"></script>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script dangerouslySetInnerHTML={{ __html: PAGE_STATE_SCRIPT }} />
       </head>
       <body className="bg-gray-50 min-h-screen">
         {session && (
