@@ -2,14 +2,14 @@ import type { Context } from "./ctx.ts";
 
 export function issues_view_new(ctx: Context, error?: string): string {
   return (
-    <div data-file="issues_view_new">
+    <div data-page="issue-new">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">New Issue</h1>
       {error && (
         <div data-role="error" className="bg-red-50 text-red-700 px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
-      <form method="POST" action="/issues" className="space-y-4">
+      <form method="POST" action="/issues" data-form="create-issue" className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
           <input

@@ -4,10 +4,11 @@ import type { IssueWithUser } from "./issues_type_IssueWithUser.ts";
 import type { CommentWithUser } from "./comments_type_CommentWithUser.ts";
 import { createTestContext, destroyTestContext } from "./test_ctx.ts";
 import { migrations_run } from "./migrations.ts";
-import { queryExists, queryCount, queryTexts, queryAttrs } from "./test_html.ts";
-import { issues_view_list, issues_view_item } from "./issues_view_list.tsx";
+import { pageState } from "./cdp_pageState.ts";
+import { issues_view_list } from "./issues_view_list.tsx";
 import { issues_view_new } from "./issues_view_new.tsx";
 import { issues_view_detail } from "./issues_view_detail.tsx";
+import { issues_view_page } from "./issues_view_page.tsx";
 
 let ctx: Context;
 
@@ -18,8 +19,8 @@ beforeAll(async () => {
 
 afterAll(() => destroyTestContext(ctx));
 
-const makeIssue = (title: string, status = "open", userName = "Alice", commentCount = 0): IssueWithUser => ({
-  id: "i-1",
+const makeIssue = (id: string, title: string, status = "open", userName = "Alice", commentCount = 0): IssueWithUser => ({
+  id,
   title,
   body: "Some body",
   status,
@@ -32,8 +33,8 @@ const makeIssue = (title: string, status = "open", userName = "Alice", commentCo
   updated_at: new Date(),
 });
 
-const makeComment = (body: string, userName: string): CommentWithUser => ({
-  id: "c-1",
+const makeComment = (id: string, body: string, userName: string): CommentWithUser => ({
+  id,
   issue_id: "i-1",
   user_id: "u-1",
   user_name: userName,
@@ -41,46 +42,79 @@ const makeComment = (body: string, userName: string): CommentWithUser => ({
   created_at: new Date(),
 });
 
-test("issues_view_list renders issues with author and status", () => {
-  const html = issues_view_list(ctx, [makeIssue("Bug", "open", "Alice", 3), makeIssue("Feature", "closed", "Bob")]);
-  expect(queryExists(html, '[data-file="issues_view_list"]')).toBe(true);
-  expect(queryCount(html, '[data-view="issue-item"]')).toBe(2);
-  expect(queryTexts(html, '[data-role="title"]')).toEqual(["Bug", "Feature"]);
-  expect(queryTexts(html, '[data-role="author"]')).toEqual(["Alice", "Bob"]);
+// --- issues list page ---
+
+test("issues list page state", () => {
+  const html = issues_view_page(ctx, [
+    makeIssue("i-1", "Bug report", "open", "Alice", 3),
+    makeIssue("i-2", "Feature req", "closed", "Bob"),
+  ]);
+  const state = pageState(html);
+  expect(state.page).toBe("issues-list");
+  expect(state.entities).toHaveLength(2);
+  expect(state.entities[0]!.type).toBe("issue");
+  expect(state.entities[0]!.id).toBe("i-1");
+  expect(state.entities[0]!.status).toBe("open");
+  expect(state.entities[0]!.fields.title).toBe("Bug report");
+  expect(state.entities[0]!.fields.author).toBe("Alice");
+  expect(state.entities[1]!.fields.title).toBe("Feature req");
+  expect(state.entities[1]!.status).toBe("closed");
+  expect(state.nav).toContain("/issues/new");
 });
 
-test("issues_view_item shows comment count", () => {
-  const html = issues_view_item(ctx, makeIssue("With comments", "open", "Alice", 5));
-  expect(queryTexts(html, '[data-role="comment-count"]')).toEqual(["5"]);
-});
+// --- new issue page ---
 
-test("issues_view_new renders form", () => {
+test("new issue page state", () => {
   const html = issues_view_new(ctx);
-  expect(queryExists(html, '[data-file="issues_view_new"]')).toBe(true);
-  expect(queryExists(html, 'input[name="title"]')).toBe(true);
-  expect(queryExists(html, 'textarea[name="body"]')).toBe(true);
-  expect(queryExists(html, '[data-action="create"]')).toBe(true);
+  const state = pageState(html);
+  expect(state.page).toBe("issue-new");
+  expect(state.forms).toHaveLength(1);
+  expect(state.forms[0]!.name).toBe("create-issue");
+  expect(state.forms[0]!.fields).toContain("title");
+  expect(state.forms[0]!.fields).toContain("body");
+  expect(state.actions.map((a) => a.action)).toContain("create");
 });
 
-test("issues_view_detail renders issue with comments", () => {
-  const issue = makeIssue("Detail test", "open", "Alice", 2);
-  const comments = [makeComment("First", "Alice"), makeComment("Second", "Bob")];
+// --- issue detail page ---
+
+test("issue detail page state", () => {
+  const issue = makeIssue("i-1", "Detail test", "open", "Alice", 2);
+  const comments = [
+    makeComment("c-1", "First comment", "Alice"),
+    makeComment("c-2", "Second comment", "Bob"),
+  ];
   const html = issues_view_detail(ctx, issue, comments);
-  expect(queryExists(html, '[data-file="issues_view_detail"]')).toBe(true);
-  expect(queryTexts(html, '[data-role="title"]')).toEqual(["Detail test"]);
-  expect(queryTexts(html, '[data-role="author"]')).toEqual(["Alice"]);
-  expect(queryCount(html, '[data-view="comment"]')).toBe(2);
-  expect(queryExists(html, 'textarea[name="body"]')).toBe(true);
+  const state = pageState(html);
+
+  expect(state.page).toBe("issue-detail");
+
+  // main entity
+  const main = state.entities.find((e) => e.type === "issue");
+  expect(main).toBeTruthy();
+  expect(main!.id).toBe("i-1");
+  expect(main!.status).toBe("open");
+  expect(main!.fields.title).toBe("Detail test");
+  expect(main!.fields.author).toBe("Alice");
+
+  // comments
+  const commentEntities = state.entities.filter((e) => e.type === "comment");
+  expect(commentEntities).toHaveLength(2);
+  expect(commentEntities[0]!.fields["comment-body"]).toBe("First comment");
+  expect(commentEntities[0]!.fields["comment-author"]).toBe("Alice");
+
+  // actions
+  expect(state.actions.map((a) => a.action)).toContain("close");
+  expect(state.actions.map((a) => a.action)).toContain("comment");
+
+  // forms
+  expect(state.forms.map((f) => f.name)).toContain("add-comment");
+  expect(state.forms.map((f) => f.name)).toContain("assign");
 });
 
-test("issues_view_detail shows close button for open issue", () => {
-  const html = issues_view_detail(ctx, makeIssue("Open", "open"), []);
-  expect(queryExists(html, '[data-action="close"]')).toBe(true);
-  expect(queryExists(html, '[data-action="reopen"]')).toBe(false);
-});
-
-test("issues_view_detail shows reopen button for closed issue", () => {
-  const html = issues_view_detail(ctx, makeIssue("Closed", "closed"), []);
-  expect(queryExists(html, '[data-action="reopen"]')).toBe(true);
-  expect(queryExists(html, '[data-action="close"]')).toBe(false);
+test("closed issue has reopen action, not close", () => {
+  const html = issues_view_detail(ctx, makeIssue("i-1", "Closed", "closed"), []);
+  const state = pageState(html);
+  const actions = state.actions.map((a) => a.action);
+  expect(actions).toContain("reopen");
+  expect(actions).not.toContain("close");
 });

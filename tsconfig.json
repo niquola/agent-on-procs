@@ -27,5 +27,5 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-  "exclude": ["docs"]
+  "exclude": ["docs", "cdp_server.ts"]
 }

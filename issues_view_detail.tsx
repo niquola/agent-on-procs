@@ -7,7 +7,7 @@ type UserOption = { id: string; name: string };
 export function issues_view_detail(ctx: Context, issue: IssueWithUser, comments: CommentWithUser[], users?: UserOption[]): string {
   const statusColor = issue.status === "open" ? "text-green-600 bg-green-50 border-green-200" : "text-purple-600 bg-purple-50 border-purple-200";
   return (
-    <div data-file="issues_view_detail">
+    <div data-page="issue-detail" data-entity="issue" data-id={issue.id} data-status={issue.status}>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
           <span data-role="title">{issue.title}</span>
@@ -46,7 +46,7 @@ export function issues_view_detail(ctx: Context, issue: IssueWithUser, comments:
 
         <div className="w-48 shrink-0">
           <div className="text-xs font-medium text-gray-500 uppercase mb-2">Assignee</div>
-          <form method="POST" action={`/issues/${issue.id}/assign`} data-view="assign-form">
+          <form method="POST" action={`/issues/${issue.id}/assign`} data-form="assign">
             <select name="assignee_id" className="w-full text-sm border border-gray-300 rounded px-2 py-1 mb-2" onchange="this.form.submit()">
               <option value="">Unassigned</option>
               {users && users.map((u) => (
@@ -64,7 +64,7 @@ export function issues_view_detail(ctx: Context, issue: IssueWithUser, comments:
 
       <div className="space-y-4 mb-6">
         {comments.map((c) => (
-          <div data-view="comment" className="bg-white border border-gray-200 rounded-lg p-4">
+          <div data-entity="comment" data-id={c.id} className="bg-white border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2 text-sm">
               <span data-role="comment-author" className="font-medium text-gray-900">{c.user_name}</span>
               <span className="text-gray-400">commented</span>
@@ -74,7 +74,7 @@ export function issues_view_detail(ctx: Context, issue: IssueWithUser, comments:
         ))}
       </div>
 
-      <form method="POST" action={`/issues/${issue.id}/comments`} className="space-y-3">
+      <form method="POST" action={`/issues/${issue.id}/comments`} data-form="add-comment" className="space-y-3">
         <textarea
           name="body"
           rows="3"
