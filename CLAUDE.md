@@ -227,29 +227,59 @@ test("my function", test_withTx(() => ctx, async (txCtx) => {
 
 Views are tested the same way — no server, no browser needed. Since views are just `(ctx, data) → string`, test the HTML output directly.
 
-**Use `data-` attributes for test selectors, never CSS classes.** Classes change with styling, data-attributes are stable.
+## Data attribute language
 
-Convention:
-- `data-file="issues_view_list"` — source file name (without extension), always on root element of each view function
-- `data-view="issue-item"` — identifies a view component
-- `data-role="title"` — identifies a semantic element within a view
-- `data-action="done"` — identifies an interactive element (button, link)
-- `data-status="todo"` — identifies state
+Every view is annotated with `data-*` attributes that describe the page for agents and tests. No CSS classes for selectors — only data attributes.
 
-Use `test_html.ts` helpers to query HTML with CSS selectors (built on Bun's `HTMLRewriter`, no npm):
+| Attribute | Purpose | Example |
+|-----------|---------|---------|
+| `data-page` | Page identity (one per page) | `issues-list`, `issue-detail`, `issue-new` |
+| `data-entity` | Entity type | `issue`, `comment` |
+| `data-id` | Entity ID | uuid |
+| `data-status` | Entity state | `open`, `closed` |
+| `data-role` | Semantic field inside entity | `title`, `author`, `comment-body` |
+| `data-action` | Clickable action | `close`, `reopen`, `comment`, `create` |
+| `data-form` | Named form | `create-issue`, `add-comment`, `assign` |
 
+### pageState() — unified helper for tests and CDP
+
+`cdp_pageState.ts` exports `pageState(html)` for tests and generates CDP command for browser.
+
+**In tests** — parse HTML string into structured state:
 ```ts
-import { queryExists, queryCount, queryTexts, queryAttrs } from "./test_html.ts";
+import { pageState } from "./cdp_pageState.ts";
 
-test("renders issue item with author", () => {
-  const html = issues_view_item(ctx, issue);
-  expect(queryExists(html, '[data-view="issue-item"]')).toBe(true);
-  expect(queryTexts(html, '[data-role="title"]')).toEqual(["Bug report"]);
-  expect(queryTexts(html, '[data-role="author"]')).toEqual(["Alice"]);
+test("issues list page", () => {
+  const html = issues_view_page(ctx, issues);
+  const state = pageState(html);
+  expect(state.page).toBe("issues-list");
+  expect(state.entities[0]!.type).toBe("issue");
+  expect(state.entities[0]!.fields.title).toBe("Bug report");
+  expect(state.actions.map(a => a.action)).toContain("close");
+  expect(state.forms[0]!.name).toBe("create-issue");
 });
 ```
 
-Helpers: `queryExists(html, sel)`, `queryCount(html, sel)`, `queryTexts(html, sel)`, `queryAttrs(html, sel, attr)`.
+**Via CDP** — extract live page state from browser:
+```sh
+curl -s localhost:2230/s/app -d "$(bun cdp_pageState.ts)" | jq -r '.result.value' | jq .
+```
+
+Returns:
+```json
+{
+  "page": "issue-detail",
+  "entities": [
+    { "type": "issue", "id": "abc", "status": "open", "fields": { "title": "Bug", "author": "Alice" } },
+    { "type": "comment", "id": "c1", "fields": { "comment-author": "Bob", "comment-body": "Fixed" } }
+  ],
+  "actions": [{ "action": "close", "selector": "[data-action=\"close\"]" }],
+  "forms": [{ "name": "add-comment", "fields": ["body"] }],
+  "nav": ["/issues", "/users"]
+}
+```
+
+Same data model in tests and CDP — write once, assert everywhere.
 
 Logic tests go in `<module>.test.ts`, view tests in `<module>_view.test.tsx`.
 
