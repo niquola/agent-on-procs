@@ -3,11 +3,9 @@ import type { IssueWithUser } from "./issues_type_IssueWithUser.ts";
 
 export function issues_view_list(ctx: Context, issues: IssueWithUser[]): string {
   return (
-    <div data-file="issues_view_list">
-      <div className="space-y-1">
-        {issues.length === 0 && <p className="text-gray-400 text-sm py-4">No issues yet.</p>}
-        {issues.map((i) => issues_view_item(ctx, i))}
-      </div>
+    <div id="issues-list">
+      {issues.length === 0 && <p className="text-gray-400 text-sm py-4">No issues yet.</p>}
+      {issues.map((i) => issues_view_item(ctx, i))}
     </div>
   );
 }

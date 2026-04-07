@@ -10,3 +10,6 @@ export { users_db_search } from "./users_db_search.ts";
 export { users_getAll } from "./users_getAll.ts";
 export type { UserWithStats } from "./users_getAll.ts";
 export { users_getById } from "./users_getById.ts";
+export { users_updateProfile } from "./users_updateProfile.ts";
+export { users_updateProfileAny } from "./users_updateAnyProfile.ts";
+export { users_delete } from "./users_delete.ts";

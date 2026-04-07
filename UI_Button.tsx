@@ -1,9 +1,11 @@
 type ButtonVariant = "primary" | "danger" | "outline" | "ghost" | "success";
 
-type ButtonProps = {
+export type ButtonProps = {
   action?: string;
   type?: "submit" | "button";
   variant?: ButtonVariant;
+  href?: string;
+  link?: string;
   children: string;
 };
 
@@ -15,8 +17,15 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   ghost: "text-gray-400 hover:text-gray-600 leading-none",
 };
 
-export function UI_Button({ action, type = "button", variant = "primary", children }: ButtonProps): string {
+export function UI_Button({ action, type = "button", variant = "primary", href, link, children }: ButtonProps): string {
   const cls = VARIANT_CLASSES[variant];
+  if (href || link) {
+    return (
+      <a href={href || link} data-action={action} className={cls}>
+        {children}
+      </a>
+    );
+  }
   return (
     <button type={type} data-action={action} className={cls}>
       {children}

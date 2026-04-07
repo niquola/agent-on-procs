@@ -62,6 +62,13 @@ test("issues list page state", () => {
   expect(state.nav).toContain("/issues/new");
 });
 
+test("issues list has new issue button", () => {
+  // Button is on the page level, not in list component
+  const html = issues_view_page(ctx, []);
+  expect(html).toContain("New");
+  expect(html).toContain("href=\"/issues/new\"");
+});
+
 // --- new issue page ---
 
 test("new issue page state", () => {

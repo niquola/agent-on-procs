@@ -14,22 +14,22 @@ export default async function (ctx: Context, session: Session, req: Request) {
   const confirmPassword = (form.get("confirm_password") as string) || undefined;
 
   if (!name || !email) {
-    return layout_view_page(ctx, session, "Edit Profile", users_view_edit(ctx, session, "Name and email are required"));
+    return layout_view_page(ctx, session, "Edit Profile", users_view_edit(ctx, session));
   }
 
   if (newPassword && newPassword !== confirmPassword) {
-    return layout_view_page(ctx, session, "Edit Profile", users_view_edit(ctx, session, "Passwords do not match"));
+    return layout_view_page(ctx, session, "Edit Profile", users_view_edit(ctx, session));
   }
 
   const result = await users_updateProfile(ctx, session, { name, email, currentPassword, newPassword });
 
   if (!result.ok) {
-    return layout_view_page(ctx, session, "Edit Profile", users_view_edit(ctx, session, result.error));
+    return layout_view_page(ctx, session, "Edit Profile", users_view_edit(ctx, session));
   }
 
   // Refresh session with updated user data
   const refreshed = await session_resolve(ctx, session.id);
   const updatedSession = refreshed ?? session;
 
-  return layout_view_page(ctx, updatedSession, "Edit Profile", users_view_edit(ctx, updatedSession, undefined, "Profile updated"));
+  return layout_view_page(ctx, updatedSession, "Edit Profile", users_view_edit(ctx, updatedSession));
 }

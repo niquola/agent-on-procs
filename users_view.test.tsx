@@ -1,5 +1,6 @@
 import { test, expect, beforeAll, afterAll } from "bun:test";
 import type { Context } from "./ctx.ts";
+import type { Session } from "./session_type_Session.ts";
 import { createTestContext, destroyTestContext } from "./test_ctx.ts";
 import { migrations_run } from "./migrations.ts";
 import { pageState } from "./cdp_pageState.ts";
@@ -11,6 +12,8 @@ import { users_view_register } from "./users_view_register.tsx";
 import type { UserWithStats } from "./users_getAll.ts";
 
 let ctx: Context;
+
+const session: Session = { id: "s1", user: { id: "u-1", name: "Alice", email: "alice@test.com" } };
 
 beforeAll(async () => {
   ctx = await createTestContext();
@@ -24,7 +27,7 @@ const makeUser = (id: string, name: string, email: string, issues = 0, comments 
 });
 
 test("users list page state", () => {
-  const html = users_view_page(ctx, [
+  const html = users_view_page(ctx, session, [
     makeUser("u-1", "Alice", "alice@test.com", 3, 10),
     makeUser("u-2", "Bob", "bob@test.com", 1, 5),
   ]);
@@ -40,7 +43,7 @@ test("users list page state", () => {
 
 test("users profile page state", () => {
   const user = makeUser("u-1", "Alice", "alice@test.com", 2, 7);
-  const html = users_view_profile(ctx, user, []);
+  const html = users_view_profile(ctx, session, user, []);
   const state = pageState(html);
   expect(state.page).toBe("user-profile");
   const entity = state.entities.find(e => e.type === "user");
@@ -61,4 +64,11 @@ test("register renders error", () => {
   const html = users_view_register("Email taken");
   expect(queryExists(html, '[data-role="error"]')).toBe(true);
   expect(queryTexts(html, '[data-role="error"]')).toEqual(["Email taken"]);
+});
+
+test("users list has add user button", () => {
+  const html = users_view_list(ctx, session, []);
+  expect(queryExists(html, '[data-action="create"]')).toBe(true);
+  expect(queryTexts(html, '[data-action="create"]')).toEqual(["New"]);
+  expect(queryExists(html, '[href="/users/new"]')).toBe(true);
 });

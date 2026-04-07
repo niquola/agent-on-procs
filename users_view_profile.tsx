@@ -1,13 +1,15 @@
 import type { Context } from "./ctx.ts";
+import type { Session } from "./session_type_Session.ts";
 import type { UserWithStats } from "./users_getAll.ts";
 import type { IssueWithUser } from "./issues_type_IssueWithUser.ts";
 import { issues_view_list } from "./issues_view_list.tsx";
+import { UI_Button } from "./UI_Button.tsx";
 
 function initials(name: string): string {
   return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
 }
 
-export function users_view_profile(ctx: Context, user: UserWithStats, issues: IssueWithUser[]): string {
+export function users_view_profile(ctx: Context, session: Session, user: UserWithStats, issues: IssueWithUser[]): string {
   return (
     <div data-page="user-profile" data-entity="user" data-id={user.id}>
       <div className="flex items-center gap-4 mb-6">
@@ -26,6 +28,12 @@ export function users_view_profile(ctx: Context, user: UserWithStats, issues: Is
         <span><span data-role="issue-count" className="font-semibold text-gray-900">{user.issue_count}</span> issues</span>
         <span><span data-role="comment-count" className="font-semibold text-gray-900">{user.comment_count}</span> comments</span>
       </div>
+
+      {user.id === session.user.id && (
+        <div className="mb-6">
+          <UI_Button href={`/users/${user.id}/edit`} variant="outline">Edit Profile</UI_Button>
+        </div>
+      )}
 
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Issues by {user.name}</h2>
       {issues_view_list(ctx, issues)}

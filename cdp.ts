@@ -26,6 +26,8 @@ async function evaluate(expression: string) {
 }
 
 export const cdp = {
+  async evaluate(expression: string) { return await evaluate(expression); },
+
   async navigate(path: string) {
     const url = path.startsWith("http") ? path : `http://localhost:3000${path}`;
     await send("Page.navigate", { url });
