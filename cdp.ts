@@ -44,7 +44,8 @@ export const cdp = {
 
   async fill(selector: string, value: string) {
     const escaped = value.replace(/'/g, "\\'").replace(/\n/g, "\\n");
-    await evaluate(`document.querySelector('${selector}').value='${escaped}'`);
+    await evaluate(`const el=document.querySelector('${selector}'); el.value='${escaped}'; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); el.dispatchEvent(new KeyboardEvent('keyup',{bubbles:true})); if(typeof htmx!=='undefined') htmx.trigger(el,'input')`);
+    await Bun.sleep(500);
   },
 
   async submit(formSelector: string) {

@@ -8,6 +8,7 @@ import { issues_create } from "./issues_create.ts";
 import { issues_listAll } from "./issues_listAll.ts";
 import { issues_getById } from "./issues_getById.ts";
 import { issues_close } from "./issues_close.ts";
+import { issues_search } from "./issues_search.ts";
 import { issues_reopen } from "./issues_reopen.ts";
 import { issues_assign } from "./issues_assign.ts";
 import { comments_create } from "./comments_create.ts";
@@ -129,6 +130,27 @@ test("comments_listByIssue returns comments with author name", async () => {
   expect(comments[0]!.user_name).toBe("Alice");
   expect(comments[1]!.body).toBe("Second");
   expect(comments[1]!.user_name).toBe("Bob");
+});
+
+// --- search ---
+
+test("issues_search finds by title prefix", async () => {
+  await issues_create(ctx, session1, { title: "Search target alpha", body: "" });
+  await issues_create(ctx, session1, { title: "Search target beta", body: "" });
+  await issues_create(ctx, session1, { title: "Other issue", body: "" });
+  const results = await issues_search(ctx, "Search target");
+  expect(results.length).toBe(2);
+  expect(results.every(r => r.title.includes("Search target"))).toBe(true);
+});
+
+test("issues_search returns empty for no match", async () => {
+  const results = await issues_search(ctx, "zzz_nonexistent_zzz");
+  expect(results.length).toBe(0);
+});
+
+test("issues_search is case insensitive", async () => {
+  const results = await issues_search(ctx, "search TARGET");
+  expect(results.length).toBe(2);
 });
 
 test("issues_getById reflects comment count", async () => {
