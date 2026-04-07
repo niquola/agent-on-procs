@@ -5,9 +5,9 @@ description: htmx documentation reference — attributes, headers, events, JS AP
 
 # htmx Docs Reference
 
-Full htmx documentation available locally at `~/.claude/skills/docs/htmx_reference/www/content/`. 185 markdown files covering the complete htmx v2.x API.
+Full htmx documentation available locally at `docs/htmx_reference/www/content/`. 185 markdown files covering the complete htmx v2.x API.
 
-All paths below are relative to `~/.claude/skills/docs/htmx_reference/www/content/`.
+All paths below are relative to `docs/htmx_reference/www/content/`.
 
 ## Docs Structure
 

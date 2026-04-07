@@ -5,9 +5,9 @@ description: Tailwind CSS v4 documentation reference — utility classes, respon
 
 # Tailwind CSS Docs Reference
 
-Tailwind CSS is a utility-first CSS framework. Full docs at `~/.claude/skills/docs/tailwind_reference/src/docs/`.
+Tailwind CSS is a utility-first CSS framework. Full docs at `docs/tailwind_reference/src/docs/`.
 
-All doc paths below are relative to `~/.claude/skills/docs/tailwind_reference/src/docs/`.
+All doc paths below are relative to `docs/tailwind_reference/src/docs/`.
 
 ## Docs Structure (192 MDX files)
 
