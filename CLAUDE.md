@@ -194,7 +194,7 @@ bun -e "import { ctx } from './ctx_start.ts'; import { auth_register } from './a
 bun -e "import { session_getIdFromRequest } from './session_getIdFromRequest.ts'; console.log(session_getIdFromRequest(new Request('http://x/', { headers: { cookie: 'sid=abc' } })))"
 ```
 
-This works because functions have no hidden state — everything goes through parameters. Prefer `bun -e` for quick validation during development. Use `bun test` for persistent regression tests.
+This works because functions have no hidden state — everything goes through parameters. Prefer `bun -e` for quick validation during development. Use `bun run test` for persistent regression tests.
 
 ## Testing
 
@@ -632,6 +632,6 @@ bun -e "import {cdp} from './cdp.ts'; await cdp.screenshot('/tmp/screen.png')"
 | Click/fill/submit | `cdp.click()`, `cdp.fill()`, `cdp.submit()` |
 | Select option | `cdp.select()` — discover options from `pageState().forms` |
 | Visual check | `cdp.screenshot()` |
-| Unit/logic tests | `bun test` (no browser) |
+| Unit/logic tests | `bun run test` (no browser) |
 
 **Prefer `pageState` over screenshots** — faster, deterministic, no image parsing.
