@@ -1,6 +1,8 @@
 import type { Context } from "./ctx.ts";
+import type { Session } from "./session_type_Session.ts";
+import { auth_guard } from "./auth_guard.ts";
 
-type Handler = (ctx: Context, req: Request, params: Record<string, string>) => Promise<string | null>;
+type Handler = (ctx: Context, session: Session | null, req: Request, params: Record<string, string>) => Promise<string | Response | null>;
 
 // HTTP_GET_tasks.tsx         → GET /tasks
 // HTTP_POST_tasks.tsx        → POST /tasks
@@ -29,8 +31,13 @@ export async function router_buildRoutes(dir: string, ctx: Context) {
 
     if (!routes[path]) routes[path] = {};
     routes[path][method] = async (req: Request) => {
-      const result = await handler(ctx, req, req.params as any);
+      const guardResult = await auth_guard(ctx, req);
+      if (guardResult instanceof Response) return guardResult;
+
+      const session: Session | null = guardResult;
+      const result = await handler(ctx, session, req, req.params as any);
       if (result === null) return new Response("not found", { status: 404 });
+      if (result instanceof Response) return result;
       return new Response(result, {
         headers: { "Content-Type": "text/html; charset=utf-8" },
       });

@@ -13,7 +13,7 @@ Procedural style. The key building blocks are **functions** and **types**.
   - Functions: `<module>_<functionName>.ts` — e.g. `user_findById.ts`, `config_parse.ts`, `order_calculateTotal.ts`
   - Views: `<module>_view_<name>.tsx` — e.g. `tasks_view_list.tsx`, `tasks_view_form.tsx`
   - Types: `<module>_type_<typeName>.ts` — e.g. `user_type_User.ts`, `order_type_LineItem.ts`
-  - Generated (`.gen.ts`): `<module>_db_<function>.gen.ts`, `<module>_db_type_<Type>.gen.ts` — auto-generated from DB schema. Never edit — overwritten by codegen.
+  - Generated (DB): `<module>_db_<function>.ts`, `<module>_db_type_<Type>.ts` — auto-generated from DB schema. Never edit — overwritten by codegen. Recognized by `_db_` in the name.
   - Names should be self-descriptive so you can understand what it does without opening the file.
 - Functions take everything they need as parameters — no hidden internal state, no singletons, no closures over mutable variables. A function should be callable from anywhere with just its arguments.
 - Prefer explicit data flow: pass dependencies in, return results out.
@@ -21,11 +21,21 @@ Procedural style. The key building blocks are **functions** and **types**.
   - Module tests: `<module>.test.ts` — tests for the whole module
   - Unit tests: `<module>_<function>.test.ts` — tests for a single function
   - View tests: `<module>_view.test.tsx` or `<module>_view_<name>.test.tsx`
-- **Context pattern**: shared dependencies (db connection, redis, config, etc.) live in a `Context` type. A `buildContext` function constructs it. Context is always the first parameter of any function that needs dependencies.
-  - `ctx.ts` — Context type only
+- **Context pattern**: shared infrastructure (db connection, redis, config, etc.) lives in a `Context` type. Context is the first parameter of any function that needs infrastructure.
+  - `ctx.ts` — Context type only (db, config — things created once at startup)
   - `ctx_start.ts` — `ctx_start()` function + pre-built `ctx` instance for `bun -e`
   - `<module>.ts` — barrel file with a brief module description comment at the top, re-exporting all module functions
   - Functions: `user_findById(ctx, id)`, `order_create(ctx, data)`, etc.
+- **Session pattern**: per-request auth data lives in a `Session` type, separate from Context.
+  - `session_type_Session.ts` — `Session` type: `{ id, user: { id, name, email } }`
+  - Session is resolved by `auth_guard` from cookie on every request
+  - `ctx` = shared infra (long-lived), `session` = per-request identity (short-lived)
+  - **Parameter order convention** — `ctx` always first, `session` always second:
+    - HTTP handlers: `(ctx, session, req, params)` → `string | Response | null`
+    - Business logic: `tasks_create(ctx, session.user.id, title)` — pass what you need explicitly
+    - Layout: `layout_view_page(ctx, session, title, body)` — both ctx and session
+    - Views: `tasks_view_list(ctx, tasks)` — ctx first, then data
+    - Views that need session: `some_view(ctx, session, data)` — ctx, session, then data
 
 ## Bun
 
@@ -186,41 +196,33 @@ Run: `bun test` or `bun test tasks.test.ts`.
 Server-side HTML rendering via custom JSX runtime (`jsx.ts`). JSX compiles to plain HTML strings — no React, no virtual DOM. Components are pure functions: `(props) → string`.
 
 - File naming: `<module>_view_<name>.tsx` — e.g. `tasks_view_list.tsx`, `tasks_view_form.tsx`
-- Views always take `ctx` as first parameter (needed for layout, session, config, etc.) plus data
+- Views take `ctx` as first parameter, then data. Layout takes `(ctx, session, title, body)`
 - Use htmx attributes (`hx-get`, `hx-post`, `hx-swap`, `hx-target`) for interactivity
 - `tsconfig.json` configured with `jsxImportSource: "."` pointing to local `jsx-runtime.ts`
 
 ```tsx
-// tasks_view_list.tsx
-export function tasks_view_list(tasks: Task[]): string {
-  return (
-    <ul>
-      {tasks.map((t) => <li>{t.title} — <em>{t.status}</em></li>)}
-    </ul>
-  );
-}
-```
-
-**Split logic and rendering.** A page/endpoint is always two functions — one does the logic (query, transform), the other renders HTML. This keeps logic testable without parsing HTML and views dumb.
-
-```tsx
-// tasks_list.ts — logic, returns data
-export async function tasks_list(ctx: Context): Promise<Task[]> {
-  return await ctx.db`SELECT * FROM tasks ORDER BY created_at`;
-}
-
 // tasks_view_list.tsx — rendering, takes ctx + data, returns HTML string
 export function tasks_view_list(ctx: Context, tasks: Task[]): string {
   return (<ul>{tasks.map((t) => <li>{t.title}</li>)}</ul>);
 }
 
-// server.ts — wires them together
-GET: async () => new Response(tasks_view_list(await tasks_list(ctx)), { headers: { "Content-Type": "text/html" } })
+// layout_view_page.tsx — wraps body in full HTML page with nav
+export function layout_view_page(ctx: Context, session: Session | null, title: string, body: string): string { ... }
+```
+
+**Split logic and rendering.** A page/endpoint is always two functions — one does the logic (query, transform), the other renders HTML. This keeps logic testable without parsing HTML and views dumb.
+
+```tsx
+// HTTP_GET_tasks.tsx — handler wires logic + view
+export default async function(ctx: Context, session: Session, req: Request) {
+  const tasks = await tasks_db_list(ctx);                           // logic
+  return layout_view_page(ctx, session, "Tasks", tasks_view_page(ctx, tasks)); // render
+}
 ```
 
 Views are testable with `bun -e` like any other function:
 ```sh
-bun -e "import { ctx } from './ctx_start.ts'; import { tasks_list } from './tasks.ts'; import { tasks_view_list } from './tasks_view_list.tsx'; console.log(tasks_view_list(await tasks_list(ctx)))"
+bun -e "import { ctx } from './ctx_start.ts'; import { tasks_db_list } from './tasks.ts'; import { tasks_view_list } from './tasks_view_list.tsx'; console.log(tasks_view_list(ctx, await tasks_db_list(ctx)))"
 ```
 
 ## Tailwind CSS
@@ -285,13 +287,13 @@ HTTP_PUT_tasks_$id_done.tsx     → PUT /tasks/:id/done
 HTTP_DELETE_tasks_$id.tsx        → DELETE /tasks/:id
 ```
 
-Each file exports a default function `(ctx, req, params) → string | null`. Returns HTML string, `null` for 404.
+Each file exports a default function `(ctx, session, req, params) → string | Response | null`. Returns HTML string, `Response` for redirects/cookies, `null` for 404.
 
 ```tsx
 // HTTP_GET_tasks.tsx
-export default async function(ctx: Context, req: Request) {
-  const tasks = await tasks_list(ctx);
-  return layout_view_page(ctx, "Tasks", tasks_view_page(ctx, tasks));
+export default async function(ctx: Context, session: Session, req: Request) {
+  const tasks = await tasks_db_list(ctx);
+  return layout_view_page(ctx, session, "Tasks", tasks_view_page(ctx, tasks));
 }
 ```
 
@@ -305,6 +307,29 @@ Bun.serve({ port: 3000, routes });
 - `ls HTTP_*.tsx` — see all endpoints
 - `ls HTTP_*tasks*` — see all task routes
 - Route handlers reuse module functions directly, no extra wrappers
+- Handler receives `ctx.user` (current session user) — set by auth guard
+
+## Auth
+
+Cookie-based session auth. The router runs `auth_guard(ctx, req)` before every handler.
+
+- `auth_guard.ts` — checks session cookie, resolves user, returns `Session | null` or `Response` (redirect to `/login`)
+- `auth_isPublic(path)` — whitelist of paths that don't require auth (`/login`, `/register`)
+- Public routes: `/login`, `/register` — accessible without session (handler gets `session = null`)
+- Protected routes: everything else — redirect to `/login` if no valid session
+
+**Session flow:**
+1. `POST /login` or `POST /register` → `session_create(ctx, userId)` → `Set-Cookie: sid=<id>`
+2. Every request → `auth_guard` reads `sid` cookie → `session_resolve` → `Session { id, user }`
+3. `POST /logout` → `session_destroy(ctx, session.id)` → clear cookie → redirect `/login`
+
+**Key files:**
+- `session_type_Session.ts` — `Session` type definition
+- `auth_guard.ts` — guard function called by router
+- `auth_login.ts` / `auth_register.ts` — credential verification / user creation
+- `auth_hashPassword.ts` / `auth_verifyPassword.ts` — bcrypt via `Bun.password`
+- `session_create.ts` / `session_resolve.ts` / `session_destroy.ts` — session CRUD
+- `session_getIdFromRequest.ts` — cookie parser
 
 ## Server
 
@@ -343,7 +368,7 @@ bun -e "import { ctx } from './ctx_start.ts'; import { migrations_rollback } fro
 
 ## Codegen
 
-Generate types and CRUD functions from PostgreSQL `information_schema`. Each generated file has `.gen.ts` suffix — always overwritten by codegen.
+Generate types and CRUD functions from PostgreSQL `information_schema`. Generated files have `_db_` in the name — always overwritten by codegen.
 
 ```sh
 bun -e "import { ctx } from './ctx_start.ts'; import { codegen_run } from './codegen_run.ts'; await codegen_run(ctx, 'tasks')"
@@ -351,19 +376,19 @@ bun -e "import { ctx } from './ctx_start.ts'; import { codegen_run } from './cod
 
 Generates per table (e.g. `tasks`):
 ```
-tasks_db_type_Tasks.gen.ts    — type from DB columns
-tasks_db_create.gen.ts        — INSERT
-tasks_db_list.gen.ts          — SELECT all
-tasks_db_getById.gen.ts       — SELECT by id
-tasks_db_update.gen.ts        — UPDATE
-tasks_db_delete.gen.ts        — DELETE
-tasks_db_search.gen.ts        — ILIKE search on text columns
+tasks_db_type_Tasks.ts    — type from DB columns
+tasks_db_create.ts        — INSERT
+tasks_db_list.ts          — SELECT all
+tasks_db_getById.ts       — SELECT by id
+tasks_db_update.ts        — UPDATE
+tasks_db_delete.ts        — DELETE
+tasks_db_search.ts        — ILIKE search on text columns
 ```
 
-**Never edit `.gen.ts` files** — they are overwritten on each codegen run. Business logic goes in separate functions (e.g. `tasks_create.ts`) that call `_db_` functions internally.
+**Never edit `_db_` files** — they are overwritten on each codegen run. Business logic goes in separate functions (e.g. `tasks_create.ts`) that call `_db_` functions internally.
 
-- `ls *_db_*.gen.ts` — all generated DB functions and types
-- Run codegen after each migration to keep `.gen.ts` files in sync with schema
+- `ls *_db_*.ts` — all generated DB functions and types
+- Run codegen after each migration to keep `_db_` files in sync with schema
 
 **JSONB typing via SQL COMMENT:** add TypeScript type as column comment — codegen reads it and generates typed field instead of `unknown`.
 

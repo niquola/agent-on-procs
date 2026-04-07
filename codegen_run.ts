@@ -18,9 +18,9 @@ export async function codegen_run(ctx: Context, table: string, dir = ".") {
 
   // type file
   const typeCode = codegen_generateType(table, cols);
-  const typeFile = `${dir}/${table}_db_type_${typeName}.gen.ts`;
+  const typeFile = `${dir}/${table}_db_type_${typeName}.ts`;
   await Bun.write(typeFile, typeCode);
-  console.log(`  ${table}_db_type_${typeName}.gen.ts`);
+  console.log(`  ${table}_db_type_${typeName}.ts`);
 
   // crud files
   const crudFiles = codegen_generateCrud(table, cols);

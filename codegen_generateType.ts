@@ -37,7 +37,7 @@ export function codegen_generateType(table: string, cols: ColumnInfo[]): string 
   });
 
   return `// Auto-generated from table "${table}" — do not edit. Re-run codegen to update.
-// Source: ${table}_db_type_${typeName}.gen.ts
+// Source: ${table}_db_type_${typeName}.ts
 
 export type ${typeName} = {
 ${fields.join("\n")}

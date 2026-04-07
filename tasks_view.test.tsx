@@ -18,6 +18,11 @@ beforeAll(async () => {
 
 afterAll(() => destroyTestContext(ctx));
 
+const mockSession = {
+  id: "sess-1",
+  user: { id: "u-1", name: "Test User", email: "test@test.com" },
+};
+
 test("tasks_view_form has input and submit", () => {
   const html = tasks_view_form(ctx);
   expect(queryExists(html, '[data-view="task-form"]')).toBe(true);
@@ -61,9 +66,21 @@ test("tasks_view_page has form and list", async () => {
 });
 
 test("layout has htmx and tailwind", () => {
-  const html = layout_view_page(ctx, "My Title", "<p>hello</p>");
+  const html = layout_view_page(ctx, mockSession, "My Title", "<p>hello</p>");
   expect(queryExists(html, "html")).toBe(true);
   expect(queryTexts(html, "title")).toEqual(["My Title"]);
   expect(queryAttrs(html, 'script[src*="htmx"]', "src").length).toBe(1);
   expect(queryAttrs(html, 'script[src*="tailwind"]', "src").length).toBe(1);
+});
+
+test("layout shows user name and logout when session present", () => {
+  const html = layout_view_page(ctx, mockSession, "Test", "<p>body</p>");
+  expect(queryTexts(html, '[data-role="user-name"]')).toEqual(["Test User"]);
+  expect(queryExists(html, '[data-action="logout"]')).toBe(true);
+});
+
+test("layout hides nav when no session", () => {
+  const html = layout_view_page(ctx, null, "Test", "<p>body</p>");
+  expect(queryExists(html, '[data-role="user-name"]')).toBe(false);
+  expect(queryExists(html, '[data-action="logout"]')).toBe(false);
 });

@@ -59,18 +59,18 @@ test("codegen_generateCrud produces CRUD files", async () => {
   const cols = await codegen_introspect(ctx, "tasks");
   const files = codegen_generateCrud("tasks", cols);
   const names = Object.keys(files);
-  expect(names).toContain("tasks_db_create.gen.ts");
-  expect(names).toContain("tasks_db_list.gen.ts");
-  expect(names).toContain("tasks_db_getById.gen.ts");
-  expect(names).toContain("tasks_db_update.gen.ts");
-  expect(names).toContain("tasks_db_delete.gen.ts");
-  expect(names).toContain("tasks_db_search.gen.ts");
+  expect(names).toContain("tasks_db_create.ts");
+  expect(names).toContain("tasks_db_list.ts");
+  expect(names).toContain("tasks_db_getById.ts");
+  expect(names).toContain("tasks_db_update.ts");
+  expect(names).toContain("tasks_db_delete.ts");
+  expect(names).toContain("tasks_db_search.ts");
 });
 
 test("codegen_generateCrud create omits default columns", async () => {
   const cols = await codegen_introspect(ctx, "tasks");
   const files = codegen_generateCrud("tasks", cols);
-  const create = files["tasks_db_create.gen.ts"];
+  const create = files["tasks_db_create.ts"];
   expect(create).toContain("TasksCreate");
   expect(create).not.toContain("id?: string"); // id has default, should be optional or omitted
 });
