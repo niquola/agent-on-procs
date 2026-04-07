@@ -578,17 +578,28 @@ Chrome DevTools Protocol for browser testing. CDP server + Chrome profile are pe
 tmux new-session -d -s "$(basename $PWD)-cdp" 'CDP_PORT=2230 CDP_CHROME_PORT=9223 bun cdp_server.ts'
 ```
 
-### Testing REST API with curl
+### Testing REST API
 
-API routes at `/api/*` require session cookie (401 if missing). Get one for testing:
+API routes at `/api/*` require session cookie (401 JSON if missing). Test with `bun -e` + fetch:
 
-```sh
-# get session cookie (creates fresh session for test user)
-bun -e "import { ctx } from './ctx_start.ts'; import { session_create } from './session_create.ts'; console.log('sid=' + await session_create(ctx, 'USER_ID'))"
+```ts
+bun -e "
+import { ctx } from './ctx_start.ts';
+import { session_create } from './session_create.ts';
 
-# or use helper script
-curl -H "Cookie: $(bun test_session.ts)" http://localhost:3000/api/issues
+// get any user and create session
+const [user] = await ctx.db\`SELECT id FROM users LIMIT 1\`;
+const sid = await session_create(ctx, user.id);
+
+// fetch API with session cookie
+const res = await fetch('http://localhost:3000/api/issues', {
+  headers: { cookie: 'sid=' + sid }
+});
+console.log(res.status, await res.json());
+"
 ```
+
+This is the same flow the browser uses: session cookie → auth_guard → handler → JSON response. No curl needed.
 
 ### cdp.ts helper
 
