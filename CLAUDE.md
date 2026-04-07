@@ -66,6 +66,40 @@ ls comments_*.ts               # all comment functions
     - Views that need session: `some_view(ctx, session, data)` — ctx, session, then data
   - **When to pass session to business functions**: if the function operates on behalf of a user (creates user-owned data, filters by user, checks permissions), it receives `session`. The function reads `session.user.id` internally. This keeps the caller clean and the ownership logic encapsulated.
 
+## Adding a new feature (full cycle)
+
+1. **Migration** — `bun -e "import { migrations_create } from './migrations_create.ts'; await migrations_create('./migrations', 'add-labels')"`
+2. **Write SQL** — edit the `.up.sql` and `.down.sql` files
+3. **Apply migration** — `bun -e "import { ctx } from './ctx_start.ts'; import { migrations_run } from './migrations.ts'; await migrations_run(ctx, './migrations')"`
+4. **Codegen** — `bun -e "import { ctx } from './ctx_start.ts'; import { codegen_run } from './codegen_run.ts'; await codegen_run(ctx, 'labels')"` — generates `_db_` files
+5. **Write tests** — `labels.test.ts` (Red)
+6. **Write business functions** — `labels_create.ts`, `labels_listByIssue.ts`, etc. (Green)
+7. **Write view tests** — `labels_view.test.tsx` (Red)
+8. **Write views** — `labels_view_list.tsx`, etc. (Green)
+9. **Write routes** — `HTTP_GET_labels.tsx`, `HTTP_POST_labels.tsx`, etc.
+10. **Create barrel** — `labels.ts` re-exporting all
+11. **Typecheck** — `bun run typecheck`
+12. **Restart server** — `tmux kill-session -t "$(basename $PWD)" 2>/dev/null; tmux new-session -d -s "$(basename $PWD)" 'bun --hot server.ts'`
+13. **Verify in browser** or via `bun -e`
+
+## Adding a new module (checklist)
+
+```
+migrations/<timestamp>-create-<table>.up.sql   — CREATE TABLE
+migrations/<timestamp>-create-<table>.down.sql  — DROP TABLE
+<module>_db_*.ts                                 — codegen (auto)
+<module>.ts                                      — barrel file
+<module>_create.ts                               — business logic
+<module>_listAll.ts                              — queries with JOINs
+<module>_type_<TypeName>.ts                      — custom types (beyond _db_)
+<module>_view_list.tsx                           — HTML views
+<module>_view_detail.tsx
+HTTP_GET_<module>.tsx                            — routes
+HTTP_POST_<module>.tsx
+<module>.test.ts                                 — logic tests
+<module>_view.test.tsx                           — view tests
+```
+
 ## Stack docs
 
 Indexes are in `docs/`, full docs in submodules. Read index first, grep full docs when you need details.
@@ -186,6 +220,73 @@ Run: `bun run test` (all tests) or `bun test issues.test.ts` (single file).
 Strict TypeScript checking via `bun run typecheck` (runs `tsc --noEmit`). `docs/` excluded from checking.
 
 Run typecheck after changes to catch type errors early. Strict mode is on — `noUncheckedIndexedAccess`, `strict`, etc.
+
+## SQL patterns
+
+Direct SQL via `ctx.db` tagged templates (`Bun.sql`). No ORM.
+
+```ts
+// simple query
+const rows = await ctx.db`SELECT * FROM issues WHERE status = ${'open'}`;
+
+// insert with returning
+const [row] = await ctx.db`INSERT INTO issues (title, body) VALUES (${title}, ${body}) RETURNING *`;
+
+// update
+const [updated] = await ctx.db`UPDATE issues SET status = ${'closed'} WHERE id = ${id} RETURNING *`;
+
+// delete
+await ctx.db`DELETE FROM comments WHERE id = ${id}`;
+
+// JOIN with alias
+const rows = await ctx.db`
+  SELECT i.*, u.name as user_name
+  FROM issues i
+  JOIN users u ON u.id = i.user_id
+`;
+
+// LEFT JOIN for optional relations
+const rows = await ctx.db`
+  SELECT i.*, a.name as assignee_name
+  FROM issues i
+  LEFT JOIN users a ON a.id = i.assignee_id
+`;
+
+// subquery
+const rows = await ctx.db`
+  SELECT i.*, (SELECT count(*)::int FROM comments c WHERE c.issue_id = i.id) as comment_count
+  FROM issues i
+`;
+
+// dynamic insert from object (codegen pattern)
+const [row] = await ctx.db`INSERT INTO issues ${ctx.db(data)} RETURNING *`;
+
+// null-safe parameter
+await ctx.db`UPDATE issues SET assignee_id = ${userId} WHERE id = ${id}`;  // userId can be null
+```
+
+Parameterized queries prevent SQL injection. Never use string interpolation for values — always use `${}` inside tagged templates.
+
+## JSX runtime
+
+Custom JSX → HTML string renderer. No React, no virtual DOM.
+
+- `jsx.ts` + `jsx-runtime.ts` + `jsx-dev-runtime.ts` — the runtime
+- `tsconfig.json`: `"jsx": "react-jsx"`, `"jsxImportSource": "."`
+- Use `className` (not `class`) — JSX convention
+- `dangerouslySetInnerHTML={{ __html: htmlString }}` — inject raw HTML (used in layout for body)
+- Boolean attributes: `<option selected={condition}>` — renders `selected` or omits
+- JSX returns `string`, not React elements — can concatenate, return from functions, test directly
+
+## Error handling
+
+Handlers return `string | Response | null`. Error patterns:
+
+- **Validation errors** — re-render form with error message: `return layout_view_page(ctx, session, "Title", view_form(ctx, "Error message"))`
+- **Not found** — return `null` (router sends 404)
+- **Redirect** — return `new Response(null, { status: 302, headers: { Location: "/path" } })`
+- **DB errors** — let them propagate (Bun returns 500 by default)
+- No try/catch around DB queries unless you need specific error handling (e.g. unique constraint)
 
 ## Views (SSR)
 
