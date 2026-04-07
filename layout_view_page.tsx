@@ -21,8 +21,8 @@ export function layout_view_page(ctx: Context, session: Session | null, title: s
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <span data-role="user-name" className="text-gray-600">{session.user.name}</span>
-                <form method="POST" action="/logout">
-                  <button data-action="logout" className="text-gray-400 hover:text-gray-600">Logout</button>
+                <form method="POST" action="/logout" className="m-0 p-0 inline">
+                  <button data-action="logout" className="text-gray-400 hover:text-gray-600 leading-none">Logout</button>
                 </form>
               </div>
             </div>
