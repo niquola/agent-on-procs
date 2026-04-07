@@ -1,41 +1,18 @@
 import type { Context } from "./ctx.ts";
+import { UI_Input } from "./UI_Input.tsx";
+import { UI_Textarea } from "./UI_Textarea.tsx";
+import { UI_Button } from "./UI_Button.tsx";
+import { UI_Alert } from "./UI_Alert.tsx";
 
 export function issues_view_new(ctx: Context, error?: string): string {
   return (
     <div data-page="issue-new">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">New Issue</h1>
-      {error && (
-        <div data-role="error" className="bg-red-50 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
+      {error && <UI_Alert message={error} />}
       <form method="POST" action="/issues" data-form="create-issue" className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-          <input
-            type="text"
-            name="title"
-            required
-            placeholder="Issue title"
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea
-            name="body"
-            rows="6"
-            placeholder="Describe the issue..."
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          ></textarea>
-        </div>
-        <button
-          type="submit"
-          data-action="create"
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition duration-200"
-        >
-          Submit new issue
-        </button>
+        <UI_Input name="title" label="Title" required placeholder="Issue title" />
+        <UI_Textarea name="body" label="Description" rows={6} placeholder="Describe the issue..." />
+        <UI_Button action="create" type="submit" variant="success">Submit new issue</UI_Button>
       </form>
     </div>
   );

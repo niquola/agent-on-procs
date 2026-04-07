@@ -16,7 +16,7 @@ Procedural web framework designed for AI agents. The key building blocks are **f
   - Generated (DB): `<module>_db_<function>.ts` — auto-generated from schema. Never edit.
   - UI pages: `http_<path>.tsx` — always GET, returns layout + HTML
   - API endpoints: `api_<path>_<METHOD>.tsx` — method at the end (POST, PUT, DELETE)
-  - UI components: `ui_<componentName>.tsx` — reusable SSR components (buttons, cards, modals, etc.)
+  - UI components: `UI_<ComponentName>.tsx` — reusable SSR components, called as JSX tags
   - Barrel: `<module>.ts` — re-exports all module functions
   - Names should be self-descriptive so you can understand what it does without opening the file.
 
@@ -307,6 +307,31 @@ Run: `bun run test` (all tests) or `bun test issues.test.ts` (single file).
 Strict TypeScript checking via `bun run typecheck` (runs `tsc --noEmit`). `docs/` excluded from checking.
 
 Run typecheck after changes to catch type errors early. Strict mode is on — `noUncheckedIndexedAccess`, `strict`, etc.
+
+## UI components (`UI_*.tsx`)
+
+Reusable SSR components. PascalCase so they work as JSX tags:
+
+```tsx
+import { UI_Button } from "./UI_Button.tsx";
+import { UI_Input } from "./UI_Input.tsx";
+import { UI_Textarea } from "./UI_Textarea.tsx";
+import { UI_Select } from "./UI_Select.tsx";
+import { UI_Alert } from "./UI_Alert.tsx";
+
+// Use as JSX tags
+<UI_Button action="close" type="submit" variant="outline">Close issue</UI_Button>
+<UI_Input name="email" label="Email" type="email" required />
+<UI_Textarea name="body" label="Description" rows={6} placeholder="..." />
+<UI_Select name="assignee_id" label="Assignee" options={[...]} value={id} autosubmit />
+<UI_Alert message="Error text" variant="error" />
+```
+
+**Button variants:** `primary` (dark), `success` (green), `danger` (red), `outline` (bordered), `ghost` (text only)
+
+Components embed `data-action` automatically from props — `action="close"` renders `data-action="close"`. This keeps `pageState()` working without extra markup.
+
+`ls UI_*.tsx` — all UI components.
 
 ## SQL patterns
 

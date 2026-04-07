@@ -1,6 +1,9 @@
 import type { Context } from "./ctx.ts";
 import type { IssueWithUser } from "./issues_type_IssueWithUser.ts";
 import type { CommentWithUser } from "./comments_type_CommentWithUser.ts";
+import { UI_Button } from "./UI_Button.tsx";
+import { UI_Textarea } from "./UI_Textarea.tsx";
+import { UI_Select } from "./UI_Select.tsx";
 
 type UserOption = { id: string; name: string };
 
@@ -26,36 +29,34 @@ export function issues_view_detail(ctx: Context, issue: IssueWithUser, comments:
               {issue.body}
             </div>
           )}
-
           <div className="flex gap-2 mb-6">
             {issue.status === "open" ? (
               <form method="POST" action={`/issues/${issue.id}/close`}>
-                <button data-action="close" className="text-sm px-3 py-1 border border-purple-300 text-purple-600 rounded hover:bg-purple-50 transition">
-                  Close issue
-                </button>
+                <UI_Button action="close" type="submit" variant="outline">Close issue</UI_Button>
               </form>
             ) : (
               <form method="POST" action={`/issues/${issue.id}/reopen`}>
-                <button data-action="reopen" className="text-sm px-3 py-1 border border-green-300 text-green-600 rounded hover:bg-green-50 transition">
-                  Reopen issue
-                </button>
+                <UI_Button action="reopen" type="submit" variant="outline">Reopen issue</UI_Button>
               </form>
             )}
           </div>
         </div>
 
         <div className="w-48 shrink-0">
-          <div className="text-xs font-medium text-gray-500 uppercase mb-2">Assignee</div>
           <form method="POST" action={`/issues/${issue.id}/assign`} data-form="assign">
-            <select name="assignee_id" className="w-full text-sm border border-gray-300 rounded px-2 py-1 mb-2" onchange="this.form.submit()">
-              <option value="">Unassigned</option>
-              {users && users.map((u) => (
-                <option value={u.id} selected={u.id === issue.assignee_id}>{u.name}</option>
-              ))}
-            </select>
+            <UI_Select
+              name="assignee_id"
+              label="Assignee"
+              value={issue.assignee_id ?? ""}
+              autosubmit
+              options={[
+                { value: "", label: "Unassigned" },
+                ...(users?.map((u) => ({ value: u.id, label: u.name })) ?? []),
+              ]}
+            />
           </form>
           {issue.assignee_name && (
-            <div data-role="assignee" className="text-sm text-gray-700">{issue.assignee_name}</div>
+            <div data-role="assignee" className="text-sm text-gray-700 mt-2">{issue.assignee_name}</div>
           )}
         </div>
       </div>
@@ -75,20 +76,8 @@ export function issues_view_detail(ctx: Context, issue: IssueWithUser, comments:
       </div>
 
       <form method="POST" action={`/issues/${issue.id}/comments`} data-form="add-comment" className="space-y-3">
-        <textarea
-          name="body"
-          rows="3"
-          required
-          placeholder="Leave a comment..."
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
-        ></textarea>
-        <button
-          type="submit"
-          data-action="comment"
-          className="px-4 py-2 bg-gray-900 text-white rounded hover:bg-gray-700 transition duration-200"
-        >
-          Comment
-        </button>
+        <UI_Textarea name="body" rows={3} required placeholder="Leave a comment..." />
+        <UI_Button action="comment" type="submit">Comment</UI_Button>
       </form>
     </div>
   );
