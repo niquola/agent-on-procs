@@ -10,9 +10,9 @@ import { session_create } from "./session_create.ts";
 import { session_resolve } from "./session_resolve.ts";
 import { session_destroy } from "./session_destroy.ts";
 import { session_getIdFromRequest } from "./session_getIdFromRequest.ts";
-import api_login_POST from "./api_login_POST.tsx";
-import api_register_POST from "./api_register_POST.tsx";
-import api_logout_POST from "./api_logout_POST.tsx";
+import form_login_POST from "./form_login_POST.tsx";
+import form_register_POST from "./form_register_POST.tsx";
+import form_logout_POST from "./form_logout_POST.tsx";
 import { router_buildRoutes } from "./router_buildRoutes.ts";
 
 let ctx: Context;
@@ -110,7 +110,7 @@ test("POST /login redirects and sets cookie on success", async () => {
   form.set("password", "evepass");
   const req = new Request("http://localhost/login", { method: "POST", body: form });
 
-  const res = await api_login_POST(ctx, null, req);
+  const res = await form_login_POST(ctx, null, req);
   expect(res).toBeInstanceOf(Response);
   expect((res as Response).status).toBe(302);
   expect((res as Response).headers.get("Location")).toBe("/issues");
@@ -123,7 +123,7 @@ test("POST /login returns error html for wrong credentials", async () => {
   form.set("password", "wrong");
   const req = new Request("http://localhost/login", { method: "POST", body: form });
 
-  const res = await api_login_POST(ctx, null, req);
+  const res = await form_login_POST(ctx, null, req);
   expect(typeof res).toBe("string");
   expect(res as string).toContain("Invalid email or password");
 });
@@ -137,7 +137,7 @@ test("POST /register creates user and redirects", async () => {
   form.set("password", "frankpass");
   const req = new Request("http://localhost/register", { method: "POST", body: form });
 
-  const res = await api_register_POST(ctx, null, req);
+  const res = await form_register_POST(ctx, null, req);
   expect(res).toBeInstanceOf(Response);
   expect((res as Response).status).toBe(302);
   expect((res as Response).headers.get("Set-Cookie")).toContain("sid=");
@@ -150,7 +150,7 @@ test("POST /register rejects duplicate email", async () => {
   form.set("password", "pass");
   const req = new Request("http://localhost/register", { method: "POST", body: form });
 
-  const res = await api_register_POST(ctx, null, req);
+  const res = await form_register_POST(ctx, null, req);
   expect(typeof res).toBe("string");
   expect(res as string).toContain("Email already taken");
 });
@@ -160,7 +160,7 @@ test("POST /register rejects missing fields", async () => {
   form.set("email", "x@test.com");
   const req = new Request("http://localhost/register", { method: "POST", body: form });
 
-  const res = await api_register_POST(ctx, null, req);
+  const res = await form_register_POST(ctx, null, req);
   expect(typeof res).toBe("string");
   expect(res as string).toContain("All fields are required");
 });
@@ -172,7 +172,7 @@ test("POST /logout clears cookie and redirects", async () => {
   const sessionId = await session_create(ctx, user.id);
   const session = await session_resolve(ctx, sessionId);
 
-  const res = await api_logout_POST(ctx, session, new Request("http://localhost/logout", { method: "POST" }));
+  const res = await form_logout_POST(ctx, session, new Request("http://localhost/logout", { method: "POST" }));
   expect(res).toBeInstanceOf(Response);
   expect((res as Response).status).toBe(302);
   expect((res as Response).headers.get("Location")).toBe("/login");
