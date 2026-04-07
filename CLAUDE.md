@@ -16,6 +16,7 @@ Procedural web framework designed for AI agents. The key building blocks are **f
   - Generated (DB): `<module>_db_<function>.ts` — auto-generated from schema. Never edit.
   - UI pages: `http_<path>.tsx` — always GET, returns layout + HTML
   - API endpoints: `api_<path>_<METHOD>.tsx` — method at the end (POST, PUT, DELETE)
+  - UI components: `ui_<componentName>.tsx` — reusable SSR components (buttons, cards, modals, etc.)
   - Barrel: `<module>.ts` — re-exports all module functions
   - Names should be self-descriptive so you can understand what it does without opening the file.
 
