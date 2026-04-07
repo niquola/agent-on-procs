@@ -8,19 +8,23 @@ No classes, no frameworks, no ORM, no magic. Just procedures, types, SQL, and HT
 
 - **Bun** — runtime, server, test runner, package manager
 - **PostgreSQL** — database (via `Bun.sql`)
-- **htmx** — interactivity without JS
+- **htmx** — interactivity without JS (default)
+- **Datastar** — reactive signals + SSE for complex UI
 - **Tailwind CSS** — styling via CDN
 - **Custom JSX** — SSR to HTML strings, no React
+- **CDP** — Chrome DevTools Protocol for UI testing
 
 ## Key Ideas
 
-- **One file = one function.** `ls *.ts *.tsx` is the full API inventory
-- **Explicit parameters.** `fn(ctx, session, data)` — no hidden state, no DI, no singletons
+- **One file = one function.** `ls *.ts *.tsx` is the full inventory
+- **Explicit parameters.** `fn(ctx, session, data)` — no hidden state, no DI
 - **ctx** = shared infrastructure (db), **session** = per-request identity (user)
 - **Procedures all the way.** Business logic, views, handlers — all plain functions
-- **File naming is documentation.** `issues_create.ts`, `HTTP_POST_issues.tsx`, `issues_view_detail.tsx`
-- **Codegen from DB.** `_db_` files auto-generated from `information_schema`, never edited
+- **File naming is documentation.** `issues_create.ts`, `http_issues.tsx`, `api_issues_POST.tsx`
+- **data-* attributes** — every view is annotated for agent interaction and testing
+- **Codegen from DB.** `_db_` files auto-generated from schema, never edited
 - **TDD.** Tests before implementation. Red, green, refactor.
+- **UI components.** `<UI_Button>`, `<UI_Input>`, `<UI_Select>` — reusable JSX tags with data-* baked in
 
 ## Quick Start
 
@@ -44,66 +48,90 @@ bun -e "import { ctx } from './ctx_start.ts'; import { migrations_run } from './
 # start server
 bun --hot server.ts
 
-# run tests
-bun test
+# run tests & typecheck
+bun run test
+bun run typecheck
 ```
 
-## Structure
+## File Naming
 
-```
-ctx.ts                          — Context type (db connection)
-ctx_start.ts                    — builds ctx from env
-server.ts                       — Bun.serve() + router
-router_buildRoutes.ts           — auto-discovers HTTP_*.tsx files
-auth_guard.ts                   — session check, redirect to /login
-layout_view_page.tsx            — HTML shell with nav
+| Pattern | Example | Purpose |
+|---------|---------|---------|
+| `<module>_<fn>.ts` | `issues_create.ts` | Business function |
+| `<module>_view_<name>.tsx` | `issues_view_detail.tsx` | View (SSR HTML) |
+| `<module>_type_<Name>.ts` | `issues_type_IssueWithUser.ts` | Type definition |
+| `<module>_db_<fn>.ts` | `issues_db_create.ts` | Generated CRUD (don't edit) |
+| `http_<path>.tsx` | `http_issues.tsx` | UI page (GET) |
+| `api_<path>_<METHOD>.tsx` | `api_issues_POST.tsx` | API endpoint |
+| `UI_<Name>.tsx` | `UI_Button.tsx` | Reusable UI component |
+| `<module>.ts` | `issues.ts` | Barrel (re-exports) |
+| `<module>.test.ts` | `issues.test.ts` | Tests |
 
-HTTP_GET_issues.tsx             — GET /issues (list)
-HTTP_POST_issues.tsx            — POST /issues (create)
-HTTP_GET_issues_$id.tsx         — GET /issues/:id (detail)
-HTTP_POST_issues_$id_close.tsx  — POST /issues/:id/close
-...
+## Navigate with `ls`
 
-issues_create.ts                — business logic
-issues_listAll.ts               — query with JOIN
-issues_view_list.tsx            — HTML rendering
-issues_view_detail.tsx          — HTML rendering
-issues_type_IssueWithUser.ts    — type definition
-
-issues_db_create.ts             — generated CRUD (don't edit)
-issues_db_list.ts               — generated
-...
-
-migrations/                     — SQL up/down files
+```sh
+ls *.ts *.tsx              # everything
+ls http_*.tsx              # all UI pages
+ls api_*.tsx               # all API endpoints
+ls issues_*.ts             # all issue functions
+ls UI_*.tsx                # all UI components
+ls *_db_*.ts               # all generated DB functions
+ls *.test.ts *.test.tsx    # all tests
 ```
 
-## Conventions
+## data-* Attribute Language
 
-| Pattern | Example |
-|---|---|
-| Function | `issues_create.ts` |
-| View | `issues_view_detail.tsx` |
-| Type | `issues_type_IssueWithUser.ts` |
-| Generated DB | `issues_db_create.ts` |
-| Route | `HTTP_POST_issues_$id_close.tsx` |
-| Test | `issues.test.ts`, `issues_view.test.tsx` |
-| Barrel | `issues.ts` |
+Every view is annotated for agents and tests:
 
-## Call any function from CLI
+| Attribute | Purpose | Example |
+|-----------|---------|---------|
+| `data-page` | Page identity | `issues-list`, `issue-detail`, `login` |
+| `data-entity` | Entity type | `issue`, `comment`, `user` |
+| `data-id` | Entity ID | uuid |
+| `data-status` | Entity state | `open`, `closed` |
+| `data-role` | Semantic field | `title`, `author`, `comment-body` |
+| `data-action` | Clickable action | `close`, `reopen`, `comment` |
+| `data-form` | Named form | `create-issue`, `add-comment`, `login` |
+
+`__pageState()` is injected into every page — returns structured JSON with entities, actions, forms (including select options), and navigation links.
+
+## UI Testing with CDP
+
+```sh
+# start CDP server
+tmux new-session -d -s cdp 'CDP_PORT=2230 CDP_CHROME_PORT=9223 bun cdp_server.ts'
+```
+
+```ts
+import { cdp } from './cdp.ts';
+
+await cdp.navigate('/issues');
+const state = await cdp.pageState();   // { page, entities[], actions[], forms[], nav[] }
+await cdp.click('[data-action=close]');
+await cdp.fill('[data-form=add-comment] textarea[name=body]', 'Fixed!');
+await cdp.submit('[data-form=add-comment]');
+await cdp.select('[data-form=assign] select[name=assignee_id]', userId);
+await cdp.screenshot('/tmp/screen.png');
+```
+
+## Call Any Function from CLI
 
 ```bash
-# db query
 bun -e "import { ctx } from './ctx_start.ts'; console.log(await ctx.db\`SELECT count(*) FROM issues\`)"
-
-# business function
-bun -e "import { ctx } from './ctx_start.ts'; import { issues_listAll } from './issues_listAll.ts'; console.log(await issues_listAll(ctx))"
-
-# register a user
-bun -e "import { ctx } from './ctx_start.ts'; import { auth_register } from './auth_register.ts'; console.log(await auth_register(ctx, { name: 'Alice', email: 'alice@test.com', password: 'pass' }))"
+bun -e "import { cdp } from './cdp.ts'; await cdp.navigate('/issues'); console.log(await cdp.pageState())"
 ```
+
+## Docs
+
+| Index | Full docs | What |
+|-------|-----------|------|
+| `docs/bun.md` | `docs/bun_reference/` | Bun runtime & APIs |
+| `docs/htmx.md` | `docs/htmx_reference/` | htmx attributes & examples |
+| `docs/tailwind.md` | `docs/tailwind_reference/` | Tailwind CSS utilities |
+| `docs/datastar.md` | `docs/datastar_reference/` | Datastar signals & SSE |
 
 ## Why "Agent on Procs"?
 
-**Agent** — the code is written by AI agents. Flat structure, self-describing filenames, `ls` = full map, `bun -e` = instant verification. Everything is optimized for agent workflow.
+**Agent** — the code is written by AI agents. Flat structure, self-describing filenames, `ls` = full map, `bun -e` = instant verification, `pageState()` = structured UI interaction.
 
 **on Procs** — procedures are the only building block. Like PostgreSQL stored procedures, but in TypeScript. No abstractions to learn, no patterns to follow — just functions that take params and return results.
