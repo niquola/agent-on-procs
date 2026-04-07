@@ -68,9 +68,13 @@ ls comments_*.ts               # all comment functions
 
 ## Stack docs
 
-- [docs/bun.md](docs/bun.md) — Bun runtime, APIs, always prefer built-in over npm
-- [docs/htmx.md](docs/htmx.md) — htmx attributes, swap strategies, how it fits procedural style
-- [docs/tailwind.md](docs/tailwind.md) — Tailwind CSS utility classes reference
+Indexes are in `docs/`, full docs in `~/.claude/skills/`. Read index first, grep full docs when you need details.
+
+| Index | Full docs | What |
+|-------|-----------|------|
+| [docs/bun.md](docs/bun.md) | `~/.claude/skills/bun/reference/` (330 mdx) | Bun runtime, APIs, prefer built-in over npm |
+| [docs/htmx.md](docs/htmx.md) | `~/.claude/skills/htmx/htmx/www/content/` (185 md) | htmx attributes, swap, triggers, examples |
+| [docs/tailwind.md](docs/tailwind.md) | `~/.claude/skills/tailwind/tailwindcss.com/src/docs/` (192 mdx) | Tailwind CSS utility classes |
 
 ## Calling Functions with `bun -e`
 

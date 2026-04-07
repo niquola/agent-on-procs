@@ -5,9 +5,9 @@ description: htmx documentation reference — attributes, headers, events, JS AP
 
 # htmx Docs Reference
 
-Full htmx documentation available locally at `htmx/htmx/www/content/`. 185 markdown files covering the complete htmx v2.x API.
+Full htmx documentation available locally at `~/.claude/skills/~/.claude/skills/htmx/htmx/www/content/`. 185 markdown files covering the complete htmx v2.x API.
 
-All paths below are relative to `htmx/htmx/www/content/`.
+All paths below are relative to `~/.claude/skills/~/.claude/skills/htmx/htmx/www/content/`.
 
 ## Docs Structure
 
@@ -135,57 +135,57 @@ Architecture and concepts:
 
 ## How to Search
 
-All docs are markdown in `htmx/htmx/www/content/`. Use Grep/Read directly.
+All docs are markdown in `~/.claude/skills/htmx/htmx/www/content/`. Use Grep/Read directly.
 
 ### Find attribute docs
 ```
 # Read a specific attribute
-Read htmx/htmx/www/content/attributes/hx-swap.md
+Read ~/.claude/skills/htmx/htmx/www/content/attributes/hx-swap.md
 
 # Search across all attributes
-Grep pattern="scroll" path="htmx/htmx/www/content/attributes"
+Grep pattern="scroll" path="~/.claude/skills/htmx/htmx/www/content/attributes"
 ```
 
 ### Find how to do something
 ```
 # Search examples for a pattern
-Grep pattern="infinite" path="htmx/htmx/www/content/examples"
+Grep pattern="infinite" path="~/.claude/skills/htmx/htmx/www/content/examples"
 
 # Search all docs for a topic
-Grep pattern="file upload" path="htmx/htmx/www/content" -i
+Grep pattern="file upload" path="~/.claude/skills/htmx/htmx/www/content" -i
 ```
 
 ### Find events
 ```
 # List all events
-Grep pattern="### Event - " path="htmx/htmx/www/content/events.md" output_mode="content"
+Grep pattern="### Event - " path="~/.claude/skills/htmx/htmx/www/content/events.md" output_mode="content"
 
 # Search for specific event details
-Grep pattern="beforeSwap" path="htmx/htmx/www/content/events.md" output_mode="content" -C=5
+Grep pattern="beforeSwap" path="~/.claude/skills/htmx/htmx/www/content/events.md" output_mode="content" -C=5
 ```
 
 ### Find JS API methods
 ```
-Grep pattern="### Method" path="htmx/htmx/www/content/api.md" output_mode="content"
+Grep pattern="### Method" path="~/.claude/skills/htmx/htmx/www/content/api.md" output_mode="content"
 ```
 
 ### Find config options
 ```
-Grep pattern="htmx.config\." path="htmx/htmx/www/content/reference.md" output_mode="content"
+Grep pattern="htmx.config\." path="~/.claude/skills/htmx/htmx/www/content/reference.md" output_mode="content"
 ```
 
 ### Search essays/concepts
 ```
-Grep pattern="hypermedia" path="htmx/htmx/www/content/essays"
+Grep pattern="hypermedia" path="~/.claude/skills/htmx/htmx/www/content/essays"
 ```
 
 ### Search response headers
 ```
-Grep pattern="HX-Trigger" path="htmx/htmx/www/content/headers" output_mode="content" -C=3
+Grep pattern="HX-Trigger" path="~/.claude/skills/htmx/htmx/www/content/headers" output_mode="content" -C=3
 ```
 
 ### Find extension usage
 ```
-Read htmx/htmx/www/content/extensions/sse.md
-Grep pattern="sse-connect" path="htmx/htmx/www/content"
+Read ~/.claude/skills/htmx/htmx/www/content/extensions/sse.md
+Grep pattern="sse-connect" path="~/.claude/skills/htmx/htmx/www/content"
 ```
