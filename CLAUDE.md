@@ -47,6 +47,8 @@ ls comments_*.ts               # all comment functions
 - `ls <module>.ts` = module boundaries (barrels)
 - Functions take everything they need as parameters — no hidden internal state, no singletons, no closures over mutable variables. A function should be callable from anywhere with just its arguments.
 - Prefer explicit data flow: pass dependencies in, return results out.
+- **Don't do extra.** Don't add features, abstractions, or "improvements" beyond what was asked. Don't guess requirements — ask.
+- **Interview before building.** When a new feature is requested, first gather minimal requirements and use cases. Ask: what exactly should it do? Who uses it? What's the simplest version? Don't jump into coding — clarify scope first.
 - **Strict TDD.** Always write tests BEFORE implementing the function. Red → Green → Refactor. No exceptions. Write the test, run it, see it fail, then implement the minimum code to pass.
   - Module tests: `<module>.test.ts` — tests for the whole module
   - Unit tests: `<module>_<function>.test.ts` — tests for a single function
