@@ -13,7 +13,7 @@ type ProfileInput = {
 type ProfileResult = { ok: true } | { ok: false; error: string };
 
 export async function users_updateProfileAny(ctx: Context, session: Session, targetUserId: string, input: ProfileInput): Promise<ProfileResult> {
-  const [user] = await ctx.db`SELECT password_hash FROM users WHERE id = ${targetUserId}`;
+  const [user] = await ctx.db`SELECT email, password_hash FROM users WHERE id = ${targetUserId}`;
   if (!user) return { ok: false, error: "User not found" };
 
   // Check email uniqueness (if changed)
@@ -22,8 +22,11 @@ export async function users_updateProfileAny(ctx: Context, session: Session, tar
     if (existing) return { ok: false, error: "Email already taken" };
   }
 
-  // Password change
+  // Password change requires current password verification
   if (input.newPassword) {
+    if (!input.currentPassword) return { ok: false, error: "Current password is required" };
+    const valid = await auth_verifyPassword(input.currentPassword, user.password_hash);
+    if (!valid) return { ok: false, error: "Current password is incorrect" };
     const hash = await auth_hashPassword(input.newPassword);
     await ctx.db`UPDATE users SET name = ${input.name}, email = ${input.email}, password_hash = ${hash} WHERE id = ${targetUserId}`;
   } else {

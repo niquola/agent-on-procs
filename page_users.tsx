@@ -6,6 +6,5 @@ import { layout_view_page } from "./layout_view_page.tsx";
 
 export default async function (ctx: Context, session: Session, req: Request) {
   const users = await users_getAll(ctx);
-  console.log('[page_users] session.user.id:', session.user.id, 'users:', users.map((u: any) => u.id));
   return layout_view_page(ctx, session, "Users", users_view_page(ctx, session, users));
 }

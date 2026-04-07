@@ -7,11 +7,13 @@ import { layout_view_page } from "./layout_view_page.tsx";
 export default async function (ctx: Context, session: Session, req: Request, params: { id: string }) {
   const user = await users_getById(ctx, params.id);
   if (!user) return null;
-  
-  // Allow editing own profile only
+
+  // Only own profile
   if (session.user.id !== user.id) {
-    return layout_view_page(ctx, session, "Error", <div>Only admin users can edit other profiles</div>);
+    return new Response(null, { status: 302, headers: { Location: `/users/${params.id}` } });
   }
-  
-  return layout_view_page(ctx, session, "Edit User", users_view_edit(ctx, session));
+
+  // Build a session-like object with target user data for the edit form
+  const editSession = { ...session, user: { id: user.id, name: user.name, email: user.email ?? "" } };
+  return layout_view_page(ctx, session, "Edit User", users_view_edit(ctx, editSession));
 }

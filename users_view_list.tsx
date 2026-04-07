@@ -6,7 +6,7 @@ import { UI_TopBar } from "./UI_TopBar.tsx";
 
 export function users_view_list(ctx: Context, session: Session | null, users: UserWithStats[]): string {
   return (
-    <div data-page="users-list">
+    <div>
       <UI_TopBar title="Users" rightElement={<UI_Button href="/users/new" variant="primary" action="create">New</UI_Button>} />
       <div className="space-y-1">
         {users.length === 0 && <p className="text-gray-400 text-sm py-4">No users yet.</p>}
