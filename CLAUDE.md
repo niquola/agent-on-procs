@@ -498,3 +498,38 @@ tasks_db_search.ts        — ILIKE search on text columns
 ```sql
 COMMENT ON COLUMN users.settings IS '{ theme: string; lang: string }';
 ```
+
+## UI testing with CDP
+
+Chrome DevTools Protocol for visual verification and UI testing. CDP server runs separately.
+
+```sh
+# start CDP server (once)
+tmux new-session -d -s cdp 'bun ~/.claude/skills/cdp/src/index.js'
+
+# navigate
+curl localhost:2229/s/app -d '{"method":"Page.navigate","params":{"url":"http://localhost:3000/issues"}}'
+
+# screenshot → file
+curl -s localhost:2229/s/app -d '{"method":"Page.captureScreenshot","params":{"format":"png"}}' | jq -r '.data' | base64 -d > /tmp/screen.png
+
+# read element text
+curl -s localhost:2229/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"h1\").textContent"}}'
+
+# click element
+curl -s localhost:2229/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"[data-action=close]\").click()"}}'
+
+# fill input
+curl -s localhost:2229/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"input[name=title]\").value=\"Bug report\""}}'
+
+# get page HTML as markdown
+curl -s localhost:2229/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.body.innerHTML"}}' | jq -r '.result.value' | ~/.claude/skills/cdp/scripts/html2md
+```
+
+**Session `app`** — reuse for all app testing. CDP keeps cookies between requests (persistent Chrome profile).
+
+**When to use CDP:**
+- Visual verification after UI changes (screenshot)
+- Test flows that need real browser (login → create issue → comment → close)
+- Debug rendering issues
+- NOT for unit/logic tests — use `bun test` for those
