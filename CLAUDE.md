@@ -66,74 +66,11 @@ ls comments_*.ts               # all comment functions
     - Views that need session: `some_view(ctx, session, data)` — ctx, session, then data
   - **When to pass session to business functions**: if the function operates on behalf of a user (creates user-owned data, filters by user, checks permissions), it receives `session`. The function reads `session.user.id` internally. This keeps the caller clean and the ownership logic encapsulated.
 
-## Bun
+## Stack docs
 
-Default to using Bun instead of Node.js.
-
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
-
-## Key Bun APIs
-
-Always prefer built-in Bun APIs over npm packages.
-
-**Servers & Networking**
-- `Bun.serve()` — HTTP/HTTPS server with routes, static files, WebSockets. Not express.
-- `fetch()` — HTTP client (Web standard)
-- `Bun.listen()` / `Bun.connect()` — raw TCP sockets
-- `Bun.udpSocket()` — UDP sockets
-- `Bun.dns` — DNS lookup
-
-**Databases & Storage**
-- `bun:sqlite` — SQLite built into runtime. Not better-sqlite3.
-- `Bun.sql` — Postgres client. Not pg or postgres.js.
-- `Bun.redis` — Redis/Valkey client. Not ioredis.
-- `Bun.s3()` — S3-compatible object storage
-
-**File System & Shell**
-- `Bun.file()` — lazy file reference (reads on `.text()`, `.json()`, etc.)
-- `Bun.write()` — write strings, Blobs, ArrayBuffers, Response, BunFile
-- `Bun.Glob` — glob pattern matching. Not `glob` npm.
-- `$\`cmd\`` — shell scripting with pipes, env, globs. Not execa.
-- `Bun.spawn()` — child processes
-
-**Crypto & Hashing**
-- `Bun.hash()` — fast non-crypto hash (wyhash)
-- `Bun.CryptoHasher` — SHA-256/512, MD5
-- `Bun.password.hash/verify` — bcrypt/argon2
-
-**Parsing & Formats**
-- `Bun.TOML.parse` — TOML
-- Native import for YAML, JSON5, JSONL
-- `Bun.markdown` — Markdown to HTML
-- `Bun.semver` — semver comparison
-
-**Compression**
-- `Bun.gzipSync()` / `Bun.gunzipSync()`
-- `Bun.deflateSync()` / `Bun.inflateSync()`
-- `Bun.zstdCompress()` / `Bun.zstdDecompress()`
-
-**Web & HTML**
-- `HTMLRewriter` — streaming HTML transform
-- `Bun.Cookie` / `Bun.CookieMap` — cookie parsing
-- `Bun.escapeHTML()` — HTML entity escaping
-- `Bun.CSRF` — CSRF token generate/verify
-
-**Utilities**
-- `Bun.sleep()` / `Bun.nanoseconds()` — timing
-- `Bun.randomUUIDv7()` — UUID generation
-- `Bun.deepEquals()` / `Bun.deepMatch()` — deep comparison
-- `Bun.inspect()` — pretty-print objects
-- `Bun.cron()` — cron scheduler
-
-**Testing** — `bun:test` with `describe/test/expect`, mocks, snapshots. Not jest/vitest.
-
-**Frontend** — `Bun.serve()` with HTML imports (`.tsx`, `.jsx`, `.css` bundled automatically). Not vite.
+- [docs/bun.md](docs/bun.md) — Bun runtime, APIs, always prefer built-in over npm
+- [docs/htmx.md](docs/htmx.md) — htmx attributes, swap strategies, how it fits procedural style
+- [docs/tailwind.md](docs/tailwind.md) — Tailwind CSS utility classes reference
 
 ## Calling Functions with `bun -e`
 
@@ -273,57 +210,6 @@ Views are testable with `bun -e` like any other function:
 ```sh
 bun -e "import { ctx } from './ctx_start.ts'; import { issues_listAll } from './issues_listAll.ts'; console.log(await issues_listAll(ctx))"
 ```
-
-## Tailwind CSS
-
-Use Tailwind v4 for styling. Import via CDN in layout or configure locally.
-
-**Key classes:**
-- Layout: `flex`, `grid`, `gap-*`, `items-center`, `justify-between`, `max-w-*`, `mx-auto`
-- Spacing: `p-*`, `px-*`, `py-*`, `m-*`, `mt-*`, `mb-*`, `space-y-*`
-- Typography: `text-sm`, `text-lg`, `text-xl`, `font-bold`, `font-medium`, `text-gray-500`
-- Colors: `bg-white`, `bg-gray-100`, `text-gray-900`, `border-gray-200`
-- Borders: `border`, `rounded`, `rounded-lg`, `rounded-full`, `shadow-sm`
-- Buttons: `px-4 py-2 bg-gray-900 text-white rounded hover:bg-gray-700`
-- Inputs: `w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500`
-- States: `hover:*`, `focus:*`, `active:*`, `disabled:opacity-50`
-- Responsive: `sm:*`, `md:*`, `lg:*` (mobile-first)
-- Dark: `dark:bg-gray-900`, `dark:text-white`
-- Transitions: `transition`, `duration-200`, `ease-in-out`
-
-Use utility classes directly in JSX views. No separate CSS files needed.
-
-## htmx
-
-Server returns HTML fragments, htmx swaps them into the page — no JS needed.
-
-**Core attributes:**
-- `hx-get="/url"`, `hx-post`, `hx-put`, `hx-delete` — HTTP request on event
-- `hx-target="#id"` — where to put the response (`this`, `closest tr`, `find .class`, `next`, `previous`)
-- `hx-swap="innerHTML"` — how to swap: `innerHTML`, `outerHTML`, `beforeend`, `afterbegin`, `delete`, `none`
-- `hx-trigger="click"` — when to fire: `click`, `change`, `keyup`, `submit`, `load`, `revealed`, `every 2s`
-- `hx-indicator="#spinner"` — show element during request
-- `hx-confirm="Sure?"` — confirmation dialog before request
-- `hx-vals='{"key":"val"}'` — extra JSON values with request
-- `hx-include="#other-form"` — include inputs from another element
-- `hx-push-url="true"` — update browser URL
-
-**Trigger modifiers:** `hx-trigger="keyup changed delay:500ms"`, `hx-trigger="click throttle:1s"`
-
-**Response headers from server:**
-- `HX-Trigger: eventName` — trigger client event after swap
-- `HX-Redirect: /url` — full redirect
-- `HX-Retarget: #other` — change target
-- `HX-Reswap: outerHTML` — change swap strategy
-
-**How htmx fits our procedural style:**
-- htmx requests hit `HTTP_*.tsx` route handlers
-- Route handler calls logic function (`tasks_list`, `tasks_create`, etc.) to get data
-- Then calls view function (`tasks_view_list`, `tasks_view_item`, etc.) to render HTML fragment
-- htmx swaps that fragment into the page
-- No JSON serialization, no client-side rendering, no JS state management
-- Full pages return layout + view, htmx partials return just the view fragment
-- Everything is testable without a browser — view functions return strings
 
 ## Routes
 
