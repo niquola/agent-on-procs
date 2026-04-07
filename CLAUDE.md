@@ -528,8 +528,44 @@ curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"express
 
 **Session `app`** — reuse for all app testing. CDP keeps cookies between requests (persistent Chrome profile).
 
-**When to use CDP:**
-- Visual verification after UI changes (screenshot)
-- Test flows that need real browser (login → create issue → comment → close)
-- Debug rendering issues
-- NOT for unit/logic tests — use `bun test` for those
+### Page state without screenshots
+
+Use `data-*` attributes to read page state as structured JSON — no screenshot needed:
+
+```sh
+# full page state (views, actions, roles, forms, links)
+curl -s localhost:2230/s/app -d "$(bun cdp_pageState.ts)" | jq -r '.result.value' | jq .
+```
+
+Returns: `{ url, title, views[], actions[], roles[], forms[], links[] }` — everything you need to assert page state.
+
+### Interacting by data-* selectors
+
+```sh
+# click by data-action
+curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"[data-action=close]\").click()"}}'
+
+# click by data-view (e.g. first issue)
+curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"[data-view=issue-item]\").click()"}}'
+
+# read all titles
+curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"JSON.stringify([...document.querySelectorAll(\"[data-role=title]\")].map(e=>e.innerText))"}}'
+
+# fill form by input name and submit
+curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"const f=document.querySelector(\"form[action*=comments]\"); f.querySelector(\"textarea[name=body]\").value=\"My comment\"; f.submit()"}}'
+
+# read status of all items
+curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"JSON.stringify([...document.querySelectorAll(\"[data-view=issue-item]\")].map(e=>({title:e.querySelector(\"[data-role=title]\")?.innerText, status:e.querySelector(\"[data-role=status]\")?.innerText})))"}}'
+```
+
+### Decision: screenshot vs data-*
+
+| Need | Use |
+|------|-----|
+| Assert page content/state | `bun cdp_pageState.ts` → JSON |
+| Click/fill/submit | `Runtime.evaluate` + `data-action`/`name` selectors |
+| Verify visual layout/styling | Screenshot (`Page.captureScreenshot`) |
+| Debug rendering bugs | Screenshot |
+| End-to-end flow test | data-* interactions + pageState assertions |
+
+**Prefer data-* over screenshots** — faster, no image parsing, deterministic. Use screenshots only for visual verification.
