@@ -189,6 +189,22 @@ Helpers: `queryExists(html, sel)`, `queryCount(html, sel)`, `queryTexts(html, se
 
 Logic tests go in `<module>.test.ts`, view tests in `<module>_view.test.tsx`.
 
+**Don't test `_db_` functions** — they are generated code. Test business logic that wraps them.
+
+**Testing HTTP handlers** — handlers are just functions `(ctx, session, req, params) → string | Response | null`. Call them directly in tests without a running server:
+```ts
+import HTTP_POST_login from "./HTTP_POST_login.tsx";
+
+test("POST /login redirects on success", async () => {
+  const form = new FormData();
+  form.set("email", "alice@test.com");
+  form.set("password", "pass");
+  const req = new Request("http://localhost/login", { method: "POST", body: form });
+  const res = await HTTP_POST_login(ctx, null, req);
+  expect((res as Response).status).toBe(302);
+});
+```
+
 Run: `bun test` or `bun test tasks.test.ts`.
 
 ## Views (SSR)
@@ -307,7 +323,6 @@ Bun.serve({ port: 3000, routes });
 - `ls HTTP_*.tsx` — see all endpoints
 - `ls HTTP_*tasks*` — see all task routes
 - Route handlers reuse module functions directly, no extra wrappers
-- Handler receives `ctx.user` (current session user) — set by auth guard
 
 ## Auth
 
