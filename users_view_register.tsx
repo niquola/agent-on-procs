@@ -1,13 +1,13 @@
 export function users_view_register(error?: string): string {
   return (
-    <div data-file="users_view_register">
+    <div data-page="register">
       <h1 className="text-2xl font-bold mb-6">Register</h1>
       {error && (
         <div data-role="error" className="bg-red-50 text-red-700 px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
-      <form method="POST" action="/register" className="space-y-4">
+      <form method="POST" action="/register" data-form="register" className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
           <input

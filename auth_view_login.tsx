@@ -1,13 +1,13 @@
 export function auth_view_login(error?: string): string {
   return (
-    <div data-file="auth_view_login">
+    <div data-page="login">
       <h1 className="text-2xl font-bold mb-6">Login</h1>
       {error && (
         <div data-role="error" className="bg-red-50 text-red-700 px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
-      <form method="POST" action="/login" className="space-y-4">
+      <form method="POST" action="/login" data-form="login" className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
           <input

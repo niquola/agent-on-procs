@@ -4,7 +4,7 @@ import { layout_view_page } from "./layout_view_page.tsx";
 
 export default async function (ctx: Context, session: Session | null, req: Request) {
   const body = (
-    <div data-file="http_index" className="text-center py-20">
+    <div data-page="home" className="text-center py-20">
       <h1 className="text-4xl font-bold text-gray-900 mb-4">Agent on Procs</h1>
       <p className="text-lg text-gray-500 mb-8">Procedural web framework for AI agents</p>
       {session ? (
