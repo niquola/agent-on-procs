@@ -125,6 +125,45 @@ Indexes are in `docs/`, full docs in submodules. Read index first, grep full doc
 
 Both can coexist on the same page. htmx uses `hx-*` attributes, Datastar uses `data-*` attributes.
 
+**htmx example** — simple form submit + swap:
+```html
+<form hx-post="/issues" hx-target="#list" hx-swap="beforeend">
+  <input name="title" required />
+  <button type="submit">Create</button>
+</form>
+<div id="list">...</div>
+```
+
+**Datastar example** — live search with reactive signals + SSE:
+```html
+<div data-signals-search="''">
+  <input data-bind-search placeholder="Search..." />
+  <div data-on-signal-change-search="@get('/issues/search')" data-indicator-fetching>
+    <!-- server streams back HTML fragments via SSE -->
+  </div>
+  <span data-show="$fetching">Loading...</span>
+</div>
+```
+
+**Datastar example** — toggle UI without server:
+```html
+<div data-signals-show="false">
+  <button data-on-click="$show = !$show">Toggle details</button>
+  <div data-show="$show">Hidden content revealed by signal</div>
+</div>
+```
+
+**When to pick which:**
+| Use case | Pick |
+|----------|------|
+| Form submit → redirect | htmx |
+| Click → swap HTML fragment | htmx |
+| Live search with debounce | Datastar |
+| Show/hide without server | Datastar |
+| Real-time updates (SSE) | Datastar |
+| Loading spinners | Datastar (`data-indicator`) |
+| Two-way form binding | Datastar (`data-bind`) |
+
 ## Calling Functions with `bun -e`
 
 Since every function is pure and takes all dependencies as parameters, you can call any function directly from the command line using `bun -e`. Use this to test, debug, and verify functions without a test harness.
