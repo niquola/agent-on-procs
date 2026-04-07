@@ -4,7 +4,7 @@ const HTTP_PORT = process.env.CDP_PORT || 2229;
 const BROWSER_URL = "http://127.0.0.1:9222";
 const DEBUG_PORT = 9222;
 const SESSION_TTL = 5 * 60 * 1000; // 5 minutes
-const USER_DATA_DIR = `${import.meta.dir}/../chrome-profile`;
+const USER_DATA_DIR = `${import.meta.dir}/.chrome-profile`;
 
 // Sessions: name -> { ws, targetId, lastUsed, msgId, pending }
 const sessions = new Map();

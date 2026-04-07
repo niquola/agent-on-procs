@@ -504,8 +504,8 @@ COMMENT ON COLUMN users.settings IS '{ theme: string; lang: string }';
 Chrome DevTools Protocol for visual verification and UI testing. CDP server runs separately.
 
 ```sh
-# start CDP server (once)
-tmux new-session -d -s cdp 'bun cdp_server.ts'
+# start CDP server in tmux (once per project)
+tmux new-session -d -s "$(basename $PWD)-cdp" 'bun cdp_server.ts'
 
 # navigate
 curl localhost:2229/s/app -d '{"method":"Page.navigate","params":{"url":"http://localhost:3000/issues"}}'
