@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 
-const HTTP_PORT = process.env.CDP_PORT || 2229;
-const BROWSER_URL = "http://127.0.0.1:9222";
-const DEBUG_PORT = 9222;
+const HTTP_PORT = Number(process.env.CDP_PORT || 2229);
+const DEBUG_PORT = Number(process.env.CDP_CHROME_PORT || 9222);
+const BROWSER_URL = `http://127.0.0.1:${DEBUG_PORT}`;
 const SESSION_TTL = 5 * 60 * 1000; // 5 minutes
 const USER_DATA_DIR = `${import.meta.dir}/.chrome-profile`;
 

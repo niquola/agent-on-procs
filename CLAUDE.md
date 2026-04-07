@@ -504,26 +504,26 @@ COMMENT ON COLUMN users.settings IS '{ theme: string; lang: string }';
 Chrome DevTools Protocol for visual verification and UI testing. CDP server runs separately.
 
 ```sh
-# start CDP server in tmux (once per project)
-tmux new-session -d -s "$(basename $PWD)-cdp" 'bun cdp_server.ts'
+# start CDP server in tmux (once per project, ports configurable)
+tmux new-session -d -s "$(basename $PWD)-cdp" 'CDP_PORT=2230 CDP_CHROME_PORT=9223 bun cdp_server.ts'
 
 # navigate
-curl localhost:2229/s/app -d '{"method":"Page.navigate","params":{"url":"http://localhost:3000/issues"}}'
+curl localhost:2230/s/app -d '{"method":"Page.navigate","params":{"url":"http://localhost:3000/issues"}}'
 
 # screenshot → file
-curl -s localhost:2229/s/app -d '{"method":"Page.captureScreenshot","params":{"format":"png"}}' | jq -r '.data' | base64 -d > /tmp/screen.png
+curl -s localhost:2230/s/app -d '{"method":"Page.captureScreenshot","params":{"format":"png"}}' | jq -r '.data' | base64 -d > /tmp/screen.png
 
 # read element text
-curl -s localhost:2229/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"h1\").textContent"}}'
+curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"h1\").textContent"}}'
 
 # click element
-curl -s localhost:2229/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"[data-action=close]\").click()"}}'
+curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"[data-action=close]\").click()"}}'
 
 # fill input
-curl -s localhost:2229/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"input[name=title]\").value=\"Bug report\""}}'
+curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"input[name=title]\").value=\"Bug report\""}}'
 
 # get page text
-curl -s localhost:2229/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.body.innerText"}}'
+curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.body.innerText"}}'
 ```
 
 **Session `app`** — reuse for all app testing. CDP keeps cookies between requests (persistent Chrome profile).
