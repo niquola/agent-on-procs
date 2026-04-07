@@ -531,71 +531,44 @@ COMMENT ON COLUMN users.settings IS '{ theme: string; lang: string }';
 
 ## UI testing with CDP
 
-Chrome DevTools Protocol for visual verification and UI testing. CDP server runs separately.
+Chrome DevTools Protocol for browser testing. CDP server + Chrome profile are per-project.
 
 ```sh
-# start CDP server in tmux (once per project, ports configurable)
+# start CDP server (once per project)
 tmux new-session -d -s "$(basename $PWD)-cdp" 'CDP_PORT=2230 CDP_CHROME_PORT=9223 bun cdp_server.ts'
-
-# navigate
-curl localhost:2230/s/app -d '{"method":"Page.navigate","params":{"url":"http://localhost:3000/issues"}}'
-
-# screenshot → file
-curl -s localhost:2230/s/app -d '{"method":"Page.captureScreenshot","params":{"format":"png"}}' | jq -r '.data' | base64 -d > /tmp/screen.png
-
-# read element text
-curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"h1\").textContent"}}'
-
-# click element
-curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"[data-action=close]\").click()"}}'
-
-# fill input
-curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"input[name=title]\").value=\"Bug report\""}}'
-
-# get page text
-curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.body.innerText"}}'
 ```
 
-**Session `app`** — reuse for all app testing. CDP keeps cookies between requests (persistent Chrome profile).
+### cdp.ts helper
 
-### Page state without screenshots
-
-Use `data-*` attributes to read page state as structured JSON — no screenshot needed:
+`cdp.ts` wraps CDP into async functions. Use via `bun -e`:
 
 ```sh
-# full page state (views, actions, roles, forms, links)
-curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"JSON.stringify(__pageState(),null,2)"}}' | jq -r '.result.value' | jq .
+# read page state
+bun -e "import {cdp} from './cdp.ts'; await cdp.navigate('/issues'); console.log(await cdp.pageState())"
+
+# click action
+bun -e "import {cdp} from './cdp.ts'; await cdp.click('[data-action=close]')"
+
+# fill form and submit
+bun -e "import {cdp} from './cdp.ts'; await cdp.fill('[data-form=add-comment] textarea[name=body]', 'Comment'); await cdp.submit('[data-form=add-comment]')"
+
+# change select
+bun -e "import {cdp} from './cdp.ts'; await cdp.select('[data-form=assign] select[name=assignee_id]', 'USER_ID')"
+
+# screenshot
+bun -e "import {cdp} from './cdp.ts'; await cdp.screenshot('/tmp/screen.png')"
 ```
 
-Returns: `{ url, title, views[], actions[], roles[], forms[], links[] }` — everything you need to assert page state.
+**API:** `navigate(path)`, `pageState()`, `click(sel)`, `fill(sel, val)`, `submit(formSel)`, `select(sel, val)`, `screenshot(path)`, `text(sel)`
 
-### Interacting by data-* selectors
+### When to use what
 
-```sh
-# click by data-action
-curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"[data-action=close]\").click()"}}'
+| Need | Tool |
+|------|------|
+| Page content/state | `cdp.pageState()` or `pageState(html)` in tests |
+| Click/fill/submit | `cdp.click()`, `cdp.fill()`, `cdp.submit()` |
+| Select option | `cdp.select()` — discover options from `pageState().forms` |
+| Visual check | `cdp.screenshot()` |
+| Unit/logic tests | `bun test` (no browser) |
 
-# click by data-view (e.g. first issue)
-curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"[data-view=issue-item]\").click()"}}'
-
-# read all titles
-curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"JSON.stringify([...document.querySelectorAll(\"[data-role=title]\")].map(e=>e.innerText))"}}'
-
-# fill form by input name and submit
-curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"const f=document.querySelector(\"form[action*=comments]\"); f.querySelector(\"textarea[name=body]\").value=\"My comment\"; f.submit()"}}'
-
-# read status of all items
-curl -s localhost:2230/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"JSON.stringify([...document.querySelectorAll(\"[data-view=issue-item]\")].map(e=>({title:e.querySelector(\"[data-role=title]\")?.innerText, status:e.querySelector(\"[data-role=status]\")?.innerText})))"}}'
-```
-
-### Decision: screenshot vs data-*
-
-| Need | Use |
-|------|-----|
-| Assert page content/state | `__pageState()` → JSON |
-| Click/fill/submit | `Runtime.evaluate` + `data-action`/`name` selectors |
-| Verify visual layout/styling | Screenshot (`Page.captureScreenshot`) |
-| Debug rendering bugs | Screenshot |
-| End-to-end flow test | data-* interactions + pageState assertions |
-
-**Prefer data-* over screenshots** — faster, no image parsing, deterministic. Use screenshots only for visual verification.
+**Prefer `pageState` over screenshots** — faster, deterministic, no image parsing.
