@@ -505,7 +505,7 @@ Chrome DevTools Protocol for visual verification and UI testing. CDP server runs
 
 ```sh
 # start CDP server (once)
-tmux new-session -d -s cdp 'bun ~/.claude/skills/cdp/src/index.js'
+tmux new-session -d -s cdp 'bun cdp_server.ts'
 
 # navigate
 curl localhost:2229/s/app -d '{"method":"Page.navigate","params":{"url":"http://localhost:3000/issues"}}'
@@ -522,8 +522,8 @@ curl -s localhost:2229/s/app -d '{"method":"Runtime.evaluate","params":{"express
 # fill input
 curl -s localhost:2229/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.querySelector(\"input[name=title]\").value=\"Bug report\""}}'
 
-# get page HTML as markdown
-curl -s localhost:2229/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.body.innerHTML"}}' | jq -r '.result.value' | ~/.claude/skills/cdp/scripts/html2md
+# get page text
+curl -s localhost:2229/s/app -d '{"method":"Runtime.evaluate","params":{"expression":"document.body.innerText"}}'
 ```
 
 **Session `app`** — reuse for all app testing. CDP keeps cookies between requests (persistent Chrome profile).
