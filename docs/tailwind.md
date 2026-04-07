@@ -5,9 +5,9 @@ description: Tailwind CSS v4 documentation reference — utility classes, respon
 
 # Tailwind CSS Docs Reference
 
-Tailwind CSS is a utility-first CSS framework. Full docs at `~/.claude/skills/~/.claude/skills/tailwind/tailwindcss.com/src/docs/`.
+Tailwind CSS is a utility-first CSS framework. Full docs at `~/.claude/skills/docs/tailwind_reference/src/docs/`.
 
-All doc paths below are relative to `~/.claude/skills/~/.claude/skills/tailwind/tailwindcss.com/src/docs/`.
+All doc paths below are relative to `~/.claude/skills/docs/tailwind_reference/src/docs/`.
 
 ## Docs Structure (192 MDX files)
 
@@ -212,37 +212,37 @@ Release notes, feature announcements, ecosystem updates. Not indexed in detail.
 ### Find utility class docs
 ```
 # Read a specific utility
-Read ~/.claude/skills/tailwind/tailwindcss.com/src/docs/padding.mdx
-Read ~/.claude/skills/tailwind/tailwindcss.com/src/docs/flex.mdx
+Read docs/tailwind_reference/src/docs/padding.mdx
+Read docs/tailwind_reference/src/docs/flex.mdx
 
 # Search for a utility by keyword
-Bash: ls ~/.claude/skills/tailwind/tailwindcss.com/src/docs/ | grep -i "grid"
-Bash: ls ~/.claude/skills/tailwind/tailwindcss.com/src/docs/ | grep -i "shadow"
+Bash: ls docs/tailwind_reference/src/docs/ | grep -i "grid"
+Bash: ls docs/tailwind_reference/src/docs/ | grep -i "shadow"
 ```
 
 ### Find core concept docs
 ```
-Read ~/.claude/skills/tailwind/tailwindcss.com/src/docs/hover-focus-and-other-states.mdx
-Read ~/.claude/skills/tailwind/tailwindcss.com/src/docs/responsive-design.mdx
-Read ~/.claude/skills/tailwind/tailwindcss.com/src/docs/dark-mode.mdx
-Read ~/.claude/skills/tailwind/tailwindcss.com/src/docs/theme.mdx
+Read docs/tailwind_reference/src/docs/hover-focus-and-other-states.mdx
+Read docs/tailwind_reference/src/docs/responsive-design.mdx
+Read docs/tailwind_reference/src/docs/dark-mode.mdx
+Read docs/tailwind_reference/src/docs/theme.mdx
 ```
 
 ### Search docs for a topic
 ```
-Grep pattern="container" path="~/.claude/skills/tailwind/tailwindcss.com/src/docs" -i
-Grep pattern="arbitrary" path="~/.claude/skills/tailwind/tailwindcss.com/src/docs" -i
-Grep pattern="@apply" path="~/.claude/skills/tailwind/tailwindcss.com/src/docs"
+Grep pattern="container" path="docs/tailwind_reference/src/docs" -i
+Grep pattern="arbitrary" path="docs/tailwind_reference/src/docs" -i
+Grep pattern="@apply" path="docs/tailwind_reference/src/docs"
 ```
 
 ### Find color palette
 ```
-Read ~/.claude/skills/tailwind/tailwindcss.com/src/docs/colors.mdx
-Grep pattern="sky-500" path="~/.claude/skills/tailwind/tailwindcss.com/src/docs"
+Read docs/tailwind_reference/src/docs/colors.mdx
+Grep pattern="sky-500" path="docs/tailwind_reference/src/docs"
 ```
 
 ### Find functions and directives
 ```
-Read ~/.claude/skills/tailwind/tailwindcss.com/src/docs/functions-and-directives.mdx
-Read ~/.claude/skills/tailwind/tailwindcss.com/src/docs/adding-custom-styles.mdx
+Read docs/tailwind_reference/src/docs/functions-and-directives.mdx
+Read docs/tailwind_reference/src/docs/adding-custom-styles.mdx
 ```

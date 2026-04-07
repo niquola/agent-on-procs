@@ -68,13 +68,13 @@ ls comments_*.ts               # all comment functions
 
 ## Stack docs
 
-Indexes are in `docs/`, full docs in `~/.claude/skills/`. Read index first, grep full docs when you need details.
+Indexes are in `docs/`, full docs in submodules. Read index first, grep full docs when you need details.
 
 | Index | Full docs | What |
 |-------|-----------|------|
-| [docs/bun.md](docs/bun.md) | `~/.claude/skills/bun/reference/` (330 mdx) | Bun runtime, APIs, prefer built-in over npm |
-| [docs/htmx.md](docs/htmx.md) | `~/.claude/skills/htmx/htmx/www/content/` (185 md) | htmx attributes, swap, triggers, examples |
-| [docs/tailwind.md](docs/tailwind.md) | `~/.claude/skills/tailwind/tailwindcss.com/src/docs/` (192 mdx) | Tailwind CSS utility classes |
+| [docs/bun.md](docs/bun.md) | `docs/bun_reference/` (330 mdx) | Bun runtime, APIs, prefer built-in over npm |
+| [docs/htmx.md](docs/htmx.md) | `docs/htmx_reference/www/content/` (185 md) | htmx attributes, swap, triggers, examples |
+| [docs/tailwind.md](docs/tailwind.md) | `docs/tailwind_reference/src/docs/` (192 mdx) | Tailwind CSS utility classes |
 
 ## Calling Functions with `bun -e`
 
