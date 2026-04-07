@@ -1,16 +1,17 @@
 // Helper to get session cookie for testing with curl
+// Usage: bun test_session.ts [email]
 import { ctx } from "./ctx_start.ts";
 import { session_create } from "./session_create.ts";
 
-export async function getTestSessionCookie() {
-  // Use the test user we created earlier
-  const userId = "019d69b8-1d9f-7000-9d71-4c942b497616"; // Test User
-  const sessionId = await session_create(ctx, userId);
+export async function getTestSessionCookie(email = "niquola@gmail.com") {
+  const [user] = await ctx.db`SELECT id FROM users WHERE email = ${email}`;
+  if (!user) throw new Error(`User not found: ${email}`);
+  const sessionId = await session_create(ctx, user.id);
   return `sid=${sessionId}`;
 }
 
-// If run directly, print the cookie
 if (import.meta.main) {
-  const cookie = await getTestSessionCookie();
+  const email = process.argv[2] || "niquola@gmail.com";
+  const cookie = await getTestSessionCookie(email);
   console.log(cookie);
 }

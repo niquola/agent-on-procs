@@ -6,7 +6,7 @@ import { session_resolve } from "./session_resolve.ts";
 const PUBLIC_PATHS = new Set(["/", "/login", "/register"]);
 
 export function auth_isPublic(path: string): boolean {
-  return PUBLIC_PATHS.has(path) || path.startsWith("/api/");
+  return PUBLIC_PATHS.has(path);
 }
 
 export async function auth_guard(ctx: Context, req: Request): Promise<Session | Response | null> {
@@ -15,6 +15,13 @@ export async function auth_guard(ctx: Context, req: Request): Promise<Session | 
   const path = new URL(req.url).pathname;
 
   if (!auth_isPublic(path) && !session) {
+    // API routes get 401 JSON, pages get 302 redirect
+    if (path.startsWith("/api/")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     return new Response(null, {
       status: 302,
       headers: { Location: "/login" },

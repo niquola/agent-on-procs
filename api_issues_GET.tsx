@@ -1,6 +1,6 @@
 import type { Context } from "./ctx.ts";
 import type { Session } from "./session_type_Session.ts";
-import { issues_listAll } from "./issues_listAll";
+import { issues_listAll } from "./issues_listAll.ts";
 
 export default async function(ctx: Context, session: Session | null, req: Request) {
   const issues = await issues_listAll(ctx);

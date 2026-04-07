@@ -471,7 +471,7 @@ form_logout_POST.tsx              → POST /logout
 api_issues_GET.tsx                → GET /api/issues (JSON)
 api_users_GET.tsx                 → GET /api/users (JSON)
 ```
-API routes skip authentication by default. To test with curl, get a session cookie:
+API routes require session cookie. Unauthenticated → 401 JSON (not 302 redirect). To test with curl:
 
 Each file exports `(ctx, session, req, params) → string | Response | null`.
 
@@ -580,7 +580,7 @@ tmux new-session -d -s "$(basename $PWD)-cdp" 'CDP_PORT=2230 CDP_CHROME_PORT=922
 
 ### Testing REST API with curl
 
-API routes are at `/api/*` and skip auth by default. Get a session cookie for testing:
+API routes at `/api/*` require session cookie (401 if missing). Get one for testing:
 
 ```sh
 # get session cookie (creates fresh session for test user)
