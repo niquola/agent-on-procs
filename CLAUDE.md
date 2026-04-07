@@ -109,6 +109,21 @@ Indexes are in `docs/`, full docs in submodules. Read index first, grep full doc
 | [docs/bun.md](docs/bun.md) | `docs/bun_reference/` (330 mdx) | Bun runtime, APIs, prefer built-in over npm |
 | [docs/htmx.md](docs/htmx.md) | `docs/htmx_reference/www/content/` (185 md) | htmx attributes, swap, triggers, examples |
 | [docs/tailwind.md](docs/tailwind.md) | `docs/tailwind_reference/src/docs/` (192 mdx) | Tailwind CSS utility classes |
+| [docs/datastar.md](docs/datastar.md) | `docs/datastar_reference/` (74 examples) | Datastar — reactive signals + SSE for complex UI |
+
+### htmx vs Datastar
+
+**htmx by default** — simple request/response: click → server HTML → swap. Forms, navigation, CRUD.
+
+**Datastar when htmx isn't enough** — reactive client state, real-time updates, complex UI:
+- Client-side reactivity (signals, computed values, conditional show/hide)
+- Real-time SSE streaming from server
+- Two-way data binding on forms
+- Complex state management across multiple elements
+- Loading indicators tied to request state
+- Cascading updates (one change triggers multiple UI updates)
+
+Both can coexist on the same page. htmx uses `hx-*` attributes, Datastar uses `data-*` attributes.
 
 ## Calling Functions with `bun -e`
 
