@@ -9,12 +9,39 @@ alwaysApply: false
 Procedural web framework designed for AI agents. The key building blocks are **functions** and **types**. No classes, no frameworks, no magic — just procedures, explicit parameters, and flat file structure that an agent can navigate by `ls`.
 
 - Each function and each type goes in its own file.
-- File naming convention. A directory listing (`ls *.ts *.tsx`) is effectively the inventory of all functions and types in the project.
-  - Functions: `<module>_<functionName>.ts` — e.g. `user_findById.ts`, `config_parse.ts`, `order_calculateTotal.ts`
-  - Views: `<module>_view_<name>.tsx` — e.g. `tasks_view_list.tsx`, `tasks_view_form.tsx`
-  - Types: `<module>_type_<typeName>.ts` — e.g. `user_type_User.ts`, `order_type_LineItem.ts`
-  - Generated (DB): `<module>_db_<function>.ts`, `<module>_db_type_<Type>.ts` — auto-generated from DB schema. Never edit — overwritten by codegen. Recognized by `_db_` in the name.
+- File naming convention: `<module>_<functionName>.ts`. A directory listing is the full inventory.
+  - Functions: `<module>_<functionName>.ts`
+  - Views: `<module>_view_<name>.tsx`
+  - Types: `<module>_type_<typeName>.ts`
+  - Generated (DB): `<module>_db_<function>.ts` — auto-generated from schema. Never edit.
+  - Routes: `HTTP_<METHOD>_<path>.tsx`
+  - Barrel: `<module>.ts` — re-exports all module functions
   - Names should be self-descriptive so you can understand what it does without opening the file.
+
+## Navigating the codebase with `ls`
+
+The flat file structure means `ls` is your primary navigation tool:
+
+```sh
+ls *.ts *.tsx                  # everything
+ls issues_*.ts                 # all issue functions and types
+ls *_view_*.tsx                # all views
+ls *_type_*.ts                 # all types
+ls *_db_*.ts                   # all generated DB functions
+ls HTTP_*.tsx                  # all HTTP endpoints (= REST API)
+ls HTTP_GET_*.tsx              # all GET endpoints
+ls HTTP_*issues*.tsx           # all issue routes
+ls *.test.ts *.test.tsx        # all tests
+ls auth_*.ts                   # all auth functions
+ls session_*.ts                # all session functions
+ls comments_*.ts               # all comment functions
+```
+
+**Reading the web app from filenames:**
+- `ls HTTP_*.tsx` = full REST API surface
+- `ls *_view_*.tsx` = all UI pages/components
+- `ls *_type_*.ts` = domain model
+- `ls <module>.ts` = module boundaries (barrels)
 - Functions take everything they need as parameters — no hidden internal state, no singletons, no closures over mutable variables. A function should be callable from anywhere with just its arguments.
 - Prefer explicit data flow: pass dependencies in, return results out.
 - **Strict TDD.** Always write tests BEFORE implementing the function. Red → Green → Refactor. No exceptions. Write the test, run it, see it fail, then implement the minimum code to pass.
@@ -32,10 +59,10 @@ Procedural web framework designed for AI agents. The key building blocks are **f
   - `ctx` = shared infra (long-lived), `session` = per-request identity (short-lived)
   - **Parameter order convention** — `ctx` always first, `session` always second:
     - HTTP handlers: `(ctx, session, req, params)` → `string | Response | null`
-    - Business logic (session-scoped): `tasks_create(ctx, session, title)` — pass session, not userId
+    - Business logic (session-scoped): `issues_create(ctx, session, {title, body})` — pass session, not userId
     - Business logic (infra-only): `migrations_run(ctx, dir)` — no session needed
     - Layout: `layout_view_page(ctx, session, title, body)` — both ctx and session
-    - Views: `tasks_view_list(ctx, tasks)` — ctx first, then data
+    - Views: `issues_view_list(ctx, issues)` — ctx first, then data
     - Views that need session: `some_view(ctx, session, data)` — ctx, session, then data
   - **When to pass session to business functions**: if the function operates on behalf of a user (creates user-owned data, filters by user, checks permissions), it receives `session`. The function reads `session.user.id` internally. This keeps the caller clean and the ownership logic encapsulated.
 
@@ -120,7 +147,7 @@ bun -e "import { ctx } from './ctx_start.ts'; console.log(await ctx.db\`SELECT v
 bun -e "import { ctx } from './ctx_start.ts'; import { migrations_status } from './migrations.ts'; await migrations_status(ctx, './migrations')"
 
 # session-scoped function (ctx + session) — build session from db
-bun -e "import { ctx } from './ctx_start.ts'; import { session_resolve } from './session_resolve.ts'; import { tasks_listByUser } from './tasks_listByUser.ts'; const s = await session_resolve(ctx, 'SESSION_ID'); console.log(await tasks_listByUser(ctx, s))"
+bun -e "import { ctx } from './ctx_start.ts'; import { session_resolve } from './session_resolve.ts'; import { issues_listAll } from './issues_listAll.ts'; console.log(await issues_listAll(ctx))"
 
 # register a user
 bun -e "import { ctx } from './ctx_start.ts'; import { auth_register } from './auth_register.ts'; console.log(await auth_register(ctx, { name: 'Test', email: 'test@test.com', password: 'pass' }))"
@@ -172,8 +199,8 @@ Views are tested the same way — no server, no browser needed. Since views are 
 **Use `data-` attributes for test selectors, never CSS classes.** Classes change with styling, data-attributes are stable.
 
 Convention:
-- `data-file="tasks_view_list"` — source file name (without extension), always on root element of each view function
-- `data-view="task-item"` — identifies a view component
+- `data-file="issues_view_list"` — source file name (without extension), always on root element of each view function
+- `data-view="issue-item"` — identifies a view component
 - `data-role="title"` — identifies a semantic element within a view
 - `data-action="done"` — identifies an interactive element (button, link)
 - `data-status="todo"` — identifies state
@@ -183,13 +210,11 @@ Use `test_html.ts` helpers to query HTML with CSS selectors (built on Bun's `HTM
 ```ts
 import { queryExists, queryCount, queryTexts, queryAttrs } from "./test_html.ts";
 
-test("renders task with done button", async () => {
-  const task = await tasks_create(ctx, "My task");
-  const html = tasks_view_item(ctx, task);
-  expect(queryExists(html, '[data-view="task-item"]')).toBe(true);
-  expect(queryAttrs(html, "[data-view]", "data-status")).toEqual(["todo"]);
-  expect(queryTexts(html, '[data-role="title"]')).toEqual(["My task"]);
-  expect(queryExists(html, '[data-action="done"]')).toBe(true);
+test("renders issue item with author", () => {
+  const html = issues_view_item(ctx, issue);
+  expect(queryExists(html, '[data-view="issue-item"]')).toBe(true);
+  expect(queryTexts(html, '[data-role="title"]')).toEqual(["Bug report"]);
+  expect(queryTexts(html, '[data-role="author"]')).toEqual(["Alice"]);
 });
 ```
 
@@ -213,21 +238,21 @@ test("POST /login redirects on success", async () => {
 });
 ```
 
-Run: `bun test` or `bun test tasks.test.ts`.
+Run: `bun test` or `bun test issues.test.ts`.
 
 ## Views (SSR)
 
 Server-side HTML rendering via custom JSX runtime (`jsx.ts`). JSX compiles to plain HTML strings — no React, no virtual DOM. Components are pure functions: `(props) → string`.
 
-- File naming: `<module>_view_<name>.tsx` — e.g. `tasks_view_list.tsx`, `tasks_view_form.tsx`
+- File naming: `<module>_view_<name>.tsx` — e.g. `issues_view_list.tsx`, `issues_view_detail.tsx`
 - Views take `ctx` as first parameter, then data. Layout takes `(ctx, session, title, body)`
 - Use htmx attributes (`hx-get`, `hx-post`, `hx-swap`, `hx-target`) for interactivity
 - `tsconfig.json` configured with `jsxImportSource: "."` pointing to local `jsx-runtime.ts`
 
 ```tsx
-// tasks_view_list.tsx — rendering, takes ctx + data, returns HTML string
-export function tasks_view_list(ctx: Context, tasks: Task[]): string {
-  return (<ul>{tasks.map((t) => <li>{t.title}</li>)}</ul>);
+// issues_view_list.tsx — rendering, takes ctx + data, returns HTML string
+export function issues_view_list(ctx: Context, issues: IssueWithUser[]): string {
+  return (<div>{issues.map((i) => issues_view_item(ctx, i))}</div>);
 }
 
 // layout_view_page.tsx — wraps body in full HTML page with nav
@@ -237,16 +262,16 @@ export function layout_view_page(ctx: Context, session: Session | null, title: s
 **Split logic and rendering.** A page/endpoint is always two functions — one does the logic (query, transform), the other renders HTML. This keeps logic testable without parsing HTML and views dumb.
 
 ```tsx
-// HTTP_GET_tasks.tsx — handler wires logic + view
+// HTTP_GET_issues.tsx — handler wires logic + view
 export default async function(ctx: Context, session: Session, req: Request) {
-  const tasks = await tasks_db_list(ctx);                           // logic
-  return layout_view_page(ctx, session, "Tasks", tasks_view_page(ctx, tasks)); // render
+  const issues = await issues_listAll(ctx);                                     // logic
+  return layout_view_page(ctx, session, "Issues", issues_view_page(ctx, issues)); // render
 }
 ```
 
 Views are testable with `bun -e` like any other function:
 ```sh
-bun -e "import { ctx } from './ctx_start.ts'; import { tasks_db_list } from './tasks.ts'; import { tasks_view_list } from './tasks_view_list.tsx'; console.log(tasks_view_list(ctx, await tasks_db_list(ctx)))"
+bun -e "import { ctx } from './ctx_start.ts'; import { issues_listAll } from './issues_listAll.ts'; console.log(await issues_listAll(ctx))"
 ```
 
 ## Tailwind CSS
@@ -305,19 +330,21 @@ Server returns HTML fragments, htmx swaps them into the page — no JS needed.
 Each HTTP endpoint is a file: `HTTP_<METHOD>_<path>.tsx`. `$param` in filename becomes `:param` in route.
 
 ```
-HTTP_GET_tasks.tsx              → GET /tasks
-HTTP_POST_tasks.tsx             → POST /tasks
-HTTP_PUT_tasks_$id_done.tsx     → PUT /tasks/:id/done
-HTTP_DELETE_tasks_$id.tsx        → DELETE /tasks/:id
+HTTP_GET_issues.tsx              → GET /issues
+HTTP_POST_issues.tsx             → POST /issues
+HTTP_GET_issues_$id.tsx          → GET /issues/:id
+HTTP_POST_issues_$id_close.tsx   → POST /issues/:id/close
+HTTP_POST_issues_$id_assign.tsx  → POST /issues/:id/assign
+HTTP_POST_issues_$id_comments.tsx → POST /issues/:id/comments
 ```
 
 Each file exports a default function `(ctx, session, req, params) → string | Response | null`. Returns HTML string, `Response` for redirects/cookies, `null` for 404.
 
 ```tsx
-// HTTP_GET_tasks.tsx
+// HTTP_GET_issues.tsx
 export default async function(ctx: Context, session: Session, req: Request) {
-  const tasks = await tasks_db_list(ctx);
-  return layout_view_page(ctx, session, "Tasks", tasks_view_page(ctx, tasks));
+  const issues = await issues_listAll(ctx);
+  return layout_view_page(ctx, session, "Issues", issues_view_page(ctx, issues));
 }
 ```
 
@@ -329,7 +356,7 @@ Bun.serve({ port: 3000, routes });
 ```
 
 - `ls HTTP_*.tsx` — see all endpoints
-- `ls HTTP_*tasks*` — see all task routes
+- `ls HTTP_*issues*` — see all issue routes
 - Route handlers reuse module functions directly, no extra wrappers
 
 ## Auth
