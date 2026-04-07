@@ -23,7 +23,7 @@ export function layout_view_page(ctx: Context, session: Session | null, title: s
                 <a href="/users" className="text-gray-700 hover:text-gray-900">Users</a>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <span data-role="user-name" className="text-gray-600">{session.user.name}</span>
+                <a href="/profile" data-role="user-name" className="text-gray-600 hover:text-gray-900">{session.user.name}</a>
                 <form method="POST" action="/logout" className="m-0 p-0 inline">
                   <UI_Button action="logout" type="submit" variant="ghost">Logout</UI_Button>
                 </form>

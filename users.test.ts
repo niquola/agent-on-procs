@@ -8,6 +8,8 @@ import { issues_create } from "./issues_create.ts";
 import { comments_create } from "./comments_create.ts";
 import { users_getAll } from "./users_getAll.ts";
 import { users_getById } from "./users_getById.ts";
+import { users_updateProfile } from "./users_updateProfile.ts";
+import { auth_login } from "./auth_login.ts";
 
 let ctx: Context;
 let session1: Session;
@@ -46,4 +48,39 @@ test("users_getById returns user with stats", async () => {
 
 test("users_getById returns null for missing", async () => {
   expect(await users_getById(ctx, "nonexistent")).toBeNull();
+});
+
+// --- update profile ---
+
+test("users_updateProfile updates name and email", async () => {
+  const res = await users_updateProfile(ctx, session1, { name: "Alice Updated", email: "alice-new@test.com" });
+  expect(res.ok).toBe(true);
+  const user = await users_getById(ctx, session1.user.id);
+  expect(user!.name).toBe("Alice Updated");
+  expect(user!.email).toBe("alice-new@test.com");
+});
+
+test("users_updateProfile rejects duplicate email", async () => {
+  const res = await users_updateProfile(ctx, session1, { name: "Alice", email: "bob@test.com" });
+  expect(res.ok).toBe(false);
+  if (!res.ok) expect(res.error).toBe("Email already taken");
+});
+
+test("users_updateProfile changes password", async () => {
+  const res = await users_updateProfile(ctx, session1, { name: "Alice Updated", email: "alice-new@test.com", currentPassword: "pass", newPassword: "newpass" });
+  expect(res.ok).toBe(true);
+  const login = await auth_login(ctx, "alice-new@test.com", "newpass");
+  expect(login).not.toBeNull();
+});
+
+test("users_updateProfile rejects wrong current password", async () => {
+  const res = await users_updateProfile(ctx, session1, { name: "Alice", email: "alice-new@test.com", currentPassword: "wrong", newPassword: "x" });
+  expect(res.ok).toBe(false);
+  if (!res.ok) expect(res.error).toBe("Current password is incorrect");
+});
+
+test("users_updateProfile requires current password for change", async () => {
+  const res = await users_updateProfile(ctx, session1, { name: "Alice", email: "alice-new@test.com", newPassword: "x" });
+  expect(res.ok).toBe(false);
+  if (!res.ok) expect(res.error).toBe("Current password is required");
 });
