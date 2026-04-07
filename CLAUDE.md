@@ -179,7 +179,13 @@ test("POST /login redirects on success", async () => {
 });
 ```
 
-Run: `bun test` or `bun test issues.test.ts`.
+Run: `bun run test` (all tests) or `bun test issues.test.ts` (single file).
+
+## Typecheck
+
+Strict TypeScript checking via `bun run typecheck` (runs `tsc --noEmit`). `docs/` excluded from checking.
+
+Run typecheck after changes to catch type errors early. Strict mode is on — `noUncheckedIndexedAccess`, `strict`, etc.
 
 ## Views (SSR)
 

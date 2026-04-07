@@ -125,10 +125,10 @@ test("comments_listByIssue returns comments with author name", async () => {
   await comments_create(ctx, session2, issue.id, "Second");
   const comments = await comments_listByIssue(ctx, issue.id);
   expect(comments.length).toBe(2);
-  expect(comments[0].body).toBe("First");
-  expect(comments[0].user_name).toBe("Alice");
-  expect(comments[1].body).toBe("Second");
-  expect(comments[1].user_name).toBe("Bob");
+  expect(comments[0]!.body).toBe("First");
+  expect(comments[0]!.user_name).toBe("Alice");
+  expect(comments[1]!.body).toBe("Second");
+  expect(comments[1]!.user_name).toBe("Bob");
 });
 
 test("issues_getById reflects comment count", async () => {

@@ -185,8 +185,8 @@ test("POST /logout clears cookie and redirects", async () => {
 
 test("protected route redirects to /login without session", async () => {
   const routes = await router_buildRoutes(".", ctx);
-  const handler = routes["/issues"]["GET"];
-  const req = new Request("http://localhost/tasks");
+  const handler = routes["/issues"]!["GET"]!;
+  const req = new Request("http://localhost/issues");
   const res = await handler(req);
   expect(res.status).toBe(302);
   expect(res.headers.get("Location")).toBe("/login");
@@ -196,8 +196,8 @@ test("protected route works with valid session", async () => {
   const user = await auth_register(ctx, { name: "Hank", email: "hank@test.com", password: "hankpass" });
   const sessionId = await session_create(ctx, user.id);
   const routes = await router_buildRoutes(".", ctx);
-  const handler = routes["/issues"]["GET"];
-  const req = new Request("http://localhost/tasks", {
+  const handler = routes["/issues"]!["GET"]!;
+  const req = new Request("http://localhost/issues", {
     headers: { cookie: `sid=${sessionId}` },
   });
   const res = await handler(req);
@@ -207,11 +207,11 @@ test("protected route works with valid session", async () => {
 
 test("public routes work without session", async () => {
   const routes = await router_buildRoutes(".", ctx);
-  const loginHandler = routes["/login"]["GET"];
+  const loginHandler = routes["/login"]!["GET"]!;
   const res = await loginHandler(new Request("http://localhost/login"));
   expect(res.status).toBe(200);
 
-  const registerHandler = routes["/register"]["GET"];
+  const registerHandler = routes["/register"]!["GET"]!;
   const res2 = await registerHandler(new Request("http://localhost/register"));
   expect(res2.status).toBe(200);
 });

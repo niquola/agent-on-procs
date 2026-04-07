@@ -25,6 +25,8 @@ const makeIssue = (title: string, status = "open", userName = "Alice", commentCo
   status,
   user_id: "u-1",
   user_name: userName,
+  assignee_id: null,
+  assignee_name: null,
   comment_count: commentCount,
   created_at: new Date(),
   updated_at: new Date(),

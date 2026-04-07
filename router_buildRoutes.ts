@@ -35,7 +35,7 @@ export async function router_buildRoutes(dir: string, ctx: Context) {
       if (guardResult instanceof Response) return guardResult;
 
       const session: Session | null = guardResult;
-      const result = await handler(ctx, session, req, req.params as any);
+      const result = await handler(ctx, session, req, (req as any).params ?? {});
       if (result === null) return new Response("not found", { status: 404 });
       if (result instanceof Response) return result;
       return new Response(result, {
