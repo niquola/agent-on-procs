@@ -17,6 +17,7 @@ export function users_view_edit(ctx: Context, session: Session, error?: string, 
         <p className="text-sm text-gray-500">Leave password fields empty to keep current password.</p>
         <UI_Input name="current_password" label="Current Password" type="password" />
         <UI_Input name="new_password" label="New Password" type="password" />
+        <UI_Input name="confirm_password" label="Confirm New Password" type="password" />
         <UI_Button action="save" type="submit" variant="primary">Save changes</UI_Button>
       </form>
     </div>

@@ -11,9 +11,14 @@ export default async function (ctx: Context, session: Session, req: Request) {
   const email = (form.get("email") as string)?.trim();
   const currentPassword = (form.get("current_password") as string) || undefined;
   const newPassword = (form.get("new_password") as string) || undefined;
+  const confirmPassword = (form.get("confirm_password") as string) || undefined;
 
   if (!name || !email) {
     return layout_view_page(ctx, session, "Edit Profile", users_view_edit(ctx, session, "Name and email are required"));
+  }
+
+  if (newPassword && newPassword !== confirmPassword) {
+    return layout_view_page(ctx, session, "Edit Profile", users_view_edit(ctx, session, "Passwords do not match"));
   }
 
   const result = await users_updateProfile(ctx, session, { name, email, currentPassword, newPassword });
