@@ -26,7 +26,7 @@ export default async function (ctx: Context, session: Session | null, req: Reque
   return new Response(null, {
     status: 302,
     headers: {
-      Location: "/tasks",
+      Location: "/issues",
       "Set-Cookie": `sid=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}`,
     },
   });

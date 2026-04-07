@@ -4,9 +4,9 @@ globs: "*.ts, *.tsx, *.html, *.css, *.js, *.jsx, package.json"
 alwaysApply: false
 ---
 
-## Style
+## Style — Agent on Procs
 
-Procedural style. The key building blocks are **functions** and **types**.
+Procedural web framework designed for AI agents. The key building blocks are **functions** and **types**. No classes, no frameworks, no magic — just procedures, explicit parameters, and flat file structure that an agent can navigate by `ls`.
 
 - Each function and each type goes in its own file.
 - File naming convention. A directory listing (`ls *.ts *.tsx`) is effectively the inventory of all functions and types in the project.
@@ -32,10 +32,12 @@ Procedural style. The key building blocks are **functions** and **types**.
   - `ctx` = shared infra (long-lived), `session` = per-request identity (short-lived)
   - **Parameter order convention** — `ctx` always first, `session` always second:
     - HTTP handlers: `(ctx, session, req, params)` → `string | Response | null`
-    - Business logic: `tasks_create(ctx, session.user.id, title)` — pass what you need explicitly
+    - Business logic (session-scoped): `tasks_create(ctx, session, title)` — pass session, not userId
+    - Business logic (infra-only): `migrations_run(ctx, dir)` — no session needed
     - Layout: `layout_view_page(ctx, session, title, body)` — both ctx and session
     - Views: `tasks_view_list(ctx, tasks)` — ctx first, then data
     - Views that need session: `some_view(ctx, session, data)` — ctx, session, then data
+  - **When to pass session to business functions**: if the function operates on behalf of a user (creates user-owned data, filters by user, checks permissions), it receives `session`. The function reads `session.user.id` internally. This keeps the caller clean and the ownership logic encapsulated.
 
 ## Bun
 
@@ -114,11 +116,17 @@ Since every function is pure and takes all dependencies as parameters, you can c
 # call db directly
 bun -e "import { ctx } from './ctx_start.ts'; console.log(await ctx.db\`SELECT version()\`)"
 
-# call a function through context
-bun -e "import { ctx } from './ctx_start.ts'; import { user_findById } from './user_findById.ts'; console.log(await user_findById(ctx, 'user-123'))"
+# infra function (ctx only)
+bun -e "import { ctx } from './ctx_start.ts'; import { migrations_status } from './migrations.ts'; await migrations_status(ctx, './migrations')"
+
+# session-scoped function (ctx + session) — build session from db
+bun -e "import { ctx } from './ctx_start.ts'; import { session_resolve } from './session_resolve.ts'; import { tasks_listByUser } from './tasks_listByUser.ts'; const s = await session_resolve(ctx, 'SESSION_ID'); console.log(await tasks_listByUser(ctx, s))"
+
+# register a user
+bun -e "import { ctx } from './ctx_start.ts'; import { auth_register } from './auth_register.ts'; console.log(await auth_register(ctx, { name: 'Test', email: 'test@test.com', password: 'pass' }))"
 
 # pure function without db
-bun -e "import { transform } from './transform.ts'; console.log(transform({ name: 'Alice', age: 30 }))"
+bun -e "import { session_getIdFromRequest } from './session_getIdFromRequest.ts'; console.log(session_getIdFromRequest(new Request('http://x/', { headers: { cookie: 'sid=abc' } })))"
 ```
 
 This works because functions have no hidden state — everything goes through parameters. Prefer `bun -e` for quick validation during development. Use `bun test` for persistent regression tests.
@@ -361,7 +369,12 @@ tmux capture-pane -t "$(basename $PWD)" -p -S -30
 tmux kill-session -t "$(basename $PWD)"
 ```
 
-`bun --hot` enables hot reload — code changes apply without restart.
+`bun --hot` enables hot reload for code changes. **Restart the server after every change** — hot reload is not always reliable, especially after adding new route files or changing imports:
+
+```sh
+# restart (kill + start)
+tmux kill-session -t "$(basename $PWD)" 2>/dev/null; tmux new-session -d -s "$(basename $PWD)" 'bun --hot server.ts'
+```
 
 ## Migrations
 

@@ -113,7 +113,7 @@ test("POST /login redirects and sets cookie on success", async () => {
   const res = await HTTP_POST_login(ctx, null, req);
   expect(res).toBeInstanceOf(Response);
   expect((res as Response).status).toBe(302);
-  expect((res as Response).headers.get("Location")).toBe("/tasks");
+  expect((res as Response).headers.get("Location")).toBe("/issues");
   expect((res as Response).headers.get("Set-Cookie")).toContain("sid=");
 });
 
@@ -185,7 +185,7 @@ test("POST /logout clears cookie and redirects", async () => {
 
 test("protected route redirects to /login without session", async () => {
   const routes = await router_buildRoutes(".", ctx);
-  const handler = routes["/tasks"]["GET"];
+  const handler = routes["/issues"]["GET"];
   const req = new Request("http://localhost/tasks");
   const res = await handler(req);
   expect(res.status).toBe(302);
@@ -196,7 +196,7 @@ test("protected route works with valid session", async () => {
   const user = await auth_register(ctx, { name: "Hank", email: "hank@test.com", password: "hankpass" });
   const sessionId = await session_create(ctx, user.id);
   const routes = await router_buildRoutes(".", ctx);
-  const handler = routes["/tasks"]["GET"];
+  const handler = routes["/issues"]["GET"];
   const req = new Request("http://localhost/tasks", {
     headers: { cookie: `sid=${sessionId}` },
   });
