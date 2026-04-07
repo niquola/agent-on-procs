@@ -6,7 +6,7 @@ import { session_resolve } from "./session_resolve.ts";
 const PUBLIC_PATHS = new Set(["/", "/login", "/register"]);
 
 export function auth_isPublic(path: string): boolean {
-  return PUBLIC_PATHS.has(path);
+  return PUBLIC_PATHS.has(path) || path.startsWith("/api/");
 }
 
 export async function auth_guard(ctx: Context, req: Request): Promise<Session | Response | null> {

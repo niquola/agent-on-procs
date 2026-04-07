@@ -17,7 +17,7 @@ Procedural web framework designed for AI agents. The key building blocks are **f
   - Pages: `page_<path>.tsx` — GET, full HTML with layout
   - Fragments: `frag_<path>.tsx` — GET, HTML fragment for htmx swap (no layout)
   - Form handlers: `form_<path>_<METHOD>.tsx` — POST/PUT/DELETE, form submit → redirect
-  - REST API: `api_<path>_<METHOD>.tsx` — JSON endpoints (when needed)
+  - REST API: `api_<path>_<METHOD>.tsx` — JSON endpoints (e.g. `api_issues_GET.tsx` → `/api/issues`)
   - UI components: `UI_<ComponentName>.tsx` — reusable SSR components, called as JSX tags
   - Barrel: `<module>.ts` — re-exports all module functions
   - Names should be self-descriptive so you can understand what it does without opening the file.
@@ -35,7 +35,7 @@ ls *_db_*.ts                   # all generated DB functions
 ls page_*.tsx                  # all pages (layout wrapped)
 ls frag_*.tsx                  # all htmx fragments
 ls form_*.tsx                  # all form handlers (POST → redirect)
-ls api_*.tsx                   # all REST JSON endpoints
+ls api_*.tsx                   # all REST JSON endpoints (/api/* paths)
 ls page_issues*.tsx form_issues*.tsx  # all issue routes
 ls *.test.ts *.test.tsx        # all tests
 ls auth_*.ts                   # all auth functions
@@ -466,10 +466,12 @@ form_login_POST.tsx               → POST /login
 form_logout_POST.tsx              → POST /logout
 ```
 
-**REST API** (`api_*.tsx`) — JSON endpoints (when needed):
+**REST API** (`api_*.tsx`) — JSON endpoints, automatically under `/api/` path:
 ```
-api_issues_GET.tsx                → GET /issues (JSON)
+api_issues_GET.tsx                → GET /api/issues (JSON)
+api_users_GET.tsx                 → GET /api/users (JSON)
 ```
+API routes skip authentication by default. To test with curl, get a session cookie:
 
 Each file exports `(ctx, session, req, params) → string | Response | null`.
 
@@ -574,6 +576,18 @@ Chrome DevTools Protocol for browser testing. CDP server + Chrome profile are pe
 ```sh
 # start CDP server (once per project)
 tmux new-session -d -s "$(basename $PWD)-cdp" 'CDP_PORT=2230 CDP_CHROME_PORT=9223 bun cdp_server.ts'
+```
+
+### Testing REST API with curl
+
+API routes are at `/api/*` and skip auth by default. Get a session cookie for testing:
+
+```sh
+# get session cookie (creates fresh session for test user)
+bun -e "import { ctx } from './ctx_start.ts'; import { session_create } from './session_create.ts'; console.log('sid=' + await session_create(ctx, 'USER_ID'))"
+
+# or use helper script
+curl -H "Cookie: $(bun test_session.ts)" http://localhost:3000/api/issues
 ```
 
 ### cdp.ts helper

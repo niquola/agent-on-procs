@@ -9,7 +9,7 @@ type Handler = (ctx: Context, session: Session | null, req: Request, params: Rec
 // frag_issues_search.tsx            → GET /issues/search (htmx fragment)
 // form_issues_POST.tsx              → POST /issues
 // form_issues_$id_close_POST.tsx    → POST /issues/:id/close
-// api_issues_GET.tsx                → GET /issues (JSON, future)
+// api_issues_GET.tsx                → GET /api/issues (JSON)
 
 function parsePath(parts: string[]): string {
   const mapped = parts.map((p) => (p.startsWith("$") ? ":" + p.slice(1) : p));
@@ -40,7 +40,8 @@ function parseApiFile(filename: string): { method: string; path: string } {
   const parts = name.split("_");
   const method = parts[parts.length - 1]!;
   const pathParts = parts.slice(0, -1);
-  return { method, path: parsePath(pathParts) };
+  // API routes are under /api/ prefix
+  return { method, path: "/api" + parsePath(pathParts) };
 }
 
 export async function router_buildRoutes(dir: string, ctx: Context) {
